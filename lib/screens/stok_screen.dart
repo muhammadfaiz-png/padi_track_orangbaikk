@@ -16,11 +16,13 @@ class _StokScreenState extends State<StokScreen> {
   void _showStokKeluarDialog() {
     final judulCtrl = TextEditingController();
     final jumlahCtrl = TextEditingController();
+    final isDark = context.isDark;
 
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      // ✅ background bottom sheet ikut dark mode
+      backgroundColor: context.cardColor,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -35,11 +37,25 @@ class _StokScreenState extends State<StokScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Handle bar
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: context.borderColor,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
             Text(
               'Stok Keluar',
               style: GoogleFonts.poppins(
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
+                color: context.textPrimary,
               ),
             ),
             const SizedBox(height: 4),
@@ -47,7 +63,7 @@ class _StokScreenState extends State<StokScreen> {
               'Input pengeluaran stok beras',
               style: GoogleFonts.poppins(
                 fontSize: 12,
-                color: AppTheme.textGrey,
+                color: context.textSecondary,
               ),
             ),
             const SizedBox(height: 20),
@@ -58,20 +74,24 @@ class _StokScreenState extends State<StokScreen> {
               style: GoogleFonts.poppins(
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
+                color: context.textPrimary,
               ),
             ),
             const SizedBox(height: 6),
             TextField(
               controller: judulCtrl,
-              style: GoogleFonts.poppins(fontSize: 14),
+              style: GoogleFonts.poppins(
+                fontSize: 14,
+                color: context.textPrimary,
+              ),
               decoration: InputDecoration(
                 hintText: 'Contoh: Penjualan beras',
                 hintStyle: GoogleFonts.poppins(
                   fontSize: 13,
-                  color: AppTheme.textLight,
+                  color: context.textHint,
                 ),
                 filled: true,
-                fillColor: const Color(0xFFF5F5F5),
+                fillColor: context.inputFillColor,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide.none,
@@ -90,21 +110,25 @@ class _StokScreenState extends State<StokScreen> {
               style: GoogleFonts.poppins(
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
+                color: context.textPrimary,
               ),
             ),
             const SizedBox(height: 6),
             TextField(
               controller: jumlahCtrl,
               keyboardType: TextInputType.number,
-              style: GoogleFonts.poppins(fontSize: 14),
+              style: GoogleFonts.poppins(
+                fontSize: 14,
+                color: context.textPrimary,
+              ),
               decoration: InputDecoration(
                 hintText: '0',
                 hintStyle: GoogleFonts.poppins(
                   fontSize: 13,
-                  color: AppTheme.textLight,
+                  color: context.textHint,
                 ),
                 filled: true,
-                fillColor: const Color(0xFFF5F5F5),
+                fillColor: context.inputFillColor,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide.none,
@@ -183,7 +207,7 @@ class _StokScreenState extends State<StokScreen> {
     }).toList();
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F7F5),
+      backgroundColor: context.bgColor,
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -199,19 +223,19 @@ class _StokScreenState extends State<StokScreen> {
                     style: GoogleFonts.poppins(
                       fontSize: 20,
                       fontWeight: FontWeight.w700,
-                      color: AppTheme.textDark,
+                      color: context.textPrimary,
                     ),
                   ),
                   Text(
                     'Pantau stok beras pabrik',
                     style: GoogleFonts.poppins(
                       fontSize: 12,
-                      color: AppTheme.textGrey,
+                      color: context.textSecondary,
                     ),
                   ),
                   const SizedBox(height: 16),
 
-                  // === STOK CARD ===
+                  // === STOK CARD (tetap hijau gradient) ===
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(20),
@@ -297,12 +321,12 @@ class _StokScreenState extends State<StokScreen> {
                           decoration: BoxDecoration(
                             color: active
                                 ? AppTheme.primaryGreen
-                                : Colors.white,
+                                : context.cardColor,
                             borderRadius: BorderRadius.circular(20),
                             border: Border.all(
                               color: active
                                   ? AppTheme.primaryGreen
-                                  : const Color(0xFFDDDDDD),
+                                  : context.borderColor,
                             ),
                           ),
                           child: Text(
@@ -310,7 +334,9 @@ class _StokScreenState extends State<StokScreen> {
                             style: GoogleFonts.poppins(
                               fontSize: 13,
                               fontWeight: FontWeight.w500,
-                              color: active ? Colors.white : AppTheme.textGrey,
+                              color: active
+                                  ? Colors.white
+                                  : context.textSecondary,
                             ),
                           ),
                         ),
@@ -324,7 +350,7 @@ class _StokScreenState extends State<StokScreen> {
                     style: GoogleFonts.poppins(
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
-                      color: AppTheme.textDark,
+                      color: context.textPrimary,
                     ),
                   ),
                 ],
@@ -338,7 +364,9 @@ class _StokScreenState extends State<StokScreen> {
                   ? Center(
                       child: Text(
                         'Belum ada aktivitas',
-                        style: GoogleFonts.poppins(color: AppTheme.textGrey),
+                        style: GoogleFonts.poppins(
+                          color: context.textSecondary,
+                        ),
                       ),
                     )
                   : ListView.builder(
@@ -351,9 +379,9 @@ class _StokScreenState extends State<StokScreen> {
                           margin: const EdgeInsets.only(bottom: 10),
                           padding: const EdgeInsets.all(14),
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: context.cardColor,
                             borderRadius: BorderRadius.circular(14),
-                            border: Border.all(color: const Color(0xFFEEEEEE)),
+                            border: Border.all(color: context.borderColor),
                           ),
                           child: Row(
                             children: [
@@ -362,7 +390,9 @@ class _StokScreenState extends State<StokScreen> {
                                 height: 40,
                                 decoration: BoxDecoration(
                                   color: masuk
-                                      ? const Color(0xFFE8F5E9)
+                                      ? context.badgeBgSelesai
+                                      : context.isDark
+                                      ? const Color(0xFF3B0A0A)
                                       : const Color(0xFFFCE4EC),
                                   borderRadius: BorderRadius.circular(10),
                                 ),
@@ -386,14 +416,14 @@ class _StokScreenState extends State<StokScreen> {
                                       style: GoogleFonts.poppins(
                                         fontSize: 13,
                                         fontWeight: FontWeight.w600,
-                                        color: AppTheme.textDark,
+                                        color: context.textPrimary,
                                       ),
                                     ),
                                     Text(
                                       t.subjudul,
                                       style: GoogleFonts.poppins(
                                         fontSize: 11,
-                                        color: AppTheme.textGrey,
+                                        color: context.textSecondary,
                                       ),
                                     ),
                                   ],
@@ -419,7 +449,6 @@ class _StokScreenState extends State<StokScreen> {
         ),
       ),
 
-      // FAB Stok Keluar
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _showStokKeluarDialog,
         backgroundColor: AppTheme.primaryGreen,

@@ -30,7 +30,6 @@ class _HasilGilingListScreenState extends State<HasilGilingListScreen> {
     super.dispose();
   }
 
-  // Filter berdasarkan chip yang dipilih
   List<PadiModel> _applyFilter(List<PadiModel> data) {
     final now = DateTime.now();
     const bln = [
@@ -51,14 +50,9 @@ class _HasilGilingListScreenState extends State<HasilGilingListScreen> {
     final tanggalHariIni = '${now.day} ${bln[now.month]} ${now.year}';
 
     List<PadiModel> filtered = data;
-
-    // Filter chip
     if (_filter == 'Hari ini') {
       filtered = filtered.where((p) => p.tanggal == tanggalHariIni).toList();
     }
-    // 'Semua' dan 'Selesai' sudah difilter dari hasilGiling (status = Selesai)
-
-    // Filter pencarian
     if (_searchQuery.isNotEmpty) {
       filtered = filtered
           .where(
@@ -67,7 +61,6 @@ class _HasilGilingListScreenState extends State<HasilGilingListScreen> {
           )
           .toList();
     }
-
     return filtered;
   }
 
@@ -77,7 +70,7 @@ class _HasilGilingListScreenState extends State<HasilGilingListScreen> {
     final data = _applyFilter(provider.hasilGiling);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F7F5),
+      backgroundColor: context.bgColor,
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -93,14 +86,14 @@ class _HasilGilingListScreenState extends State<HasilGilingListScreen> {
                     style: GoogleFonts.poppins(
                       fontSize: 20,
                       fontWeight: FontWeight.w700,
-                      color: AppTheme.textDark,
+                      color: context.textPrimary,
                     ),
                   ),
                   Text(
                     'Daftar hasil penggilingan yang telah selesai',
                     style: GoogleFonts.poppins(
                       fontSize: 12,
-                      color: AppTheme.textGrey,
+                      color: context.textSecondary,
                     ),
                   ),
                   const SizedBox(height: 14),
@@ -108,23 +101,26 @@ class _HasilGilingListScreenState extends State<HasilGilingListScreen> {
                   // Search bar
                   Container(
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: context.searchBgColor,
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: const Color(0xFFEEEEEE)),
+                      border: Border.all(color: context.borderColor),
                     ),
                     child: TextField(
                       controller: _searchCtrl,
                       onChanged: (v) => setState(() => _searchQuery = v),
-                      style: GoogleFonts.poppins(fontSize: 13),
+                      style: GoogleFonts.poppins(
+                        fontSize: 13,
+                        color: context.textPrimary,
+                      ),
                       decoration: InputDecoration(
                         hintText: 'Cari nama petani...',
                         hintStyle: GoogleFonts.poppins(
                           fontSize: 13,
-                          color: AppTheme.textLight,
+                          color: context.textHint,
                         ),
-                        prefixIcon: const Icon(
+                        prefixIcon: Icon(
                           Icons.search,
-                          color: AppTheme.textGrey,
+                          color: context.textSecondary,
                           size: 20,
                         ),
                         border: InputBorder.none,
@@ -152,12 +148,12 @@ class _HasilGilingListScreenState extends State<HasilGilingListScreen> {
                           decoration: BoxDecoration(
                             color: active
                                 ? AppTheme.primaryGreen
-                                : Colors.white,
+                                : context.cardColor,
                             borderRadius: BorderRadius.circular(20),
                             border: Border.all(
                               color: active
                                   ? AppTheme.primaryGreen
-                                  : const Color(0xFFDDDDDD),
+                                  : context.borderColor,
                             ),
                           ),
                           child: Text(
@@ -165,7 +161,9 @@ class _HasilGilingListScreenState extends State<HasilGilingListScreen> {
                             style: GoogleFonts.poppins(
                               fontSize: 12,
                               fontWeight: FontWeight.w500,
-                              color: active ? Colors.white : AppTheme.textGrey,
+                              color: active
+                                  ? Colors.white
+                                  : context.textSecondary,
                             ),
                           ),
                         ),
@@ -189,10 +187,10 @@ class _HasilGilingListScreenState extends State<HasilGilingListScreen> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Icon(
+                          Icon(
                             Icons.hourglass_empty,
                             size: 60,
-                            color: AppTheme.textLight,
+                            color: context.textHint,
                           ),
                           const SizedBox(height: 12),
                           Text(
@@ -200,7 +198,7 @@ class _HasilGilingListScreenState extends State<HasilGilingListScreen> {
                                 ? 'Hasil pencarian tidak ditemukan'
                                 : 'Belum ada hasil giling',
                             style: GoogleFonts.poppins(
-                              color: AppTheme.textGrey,
+                              color: context.textSecondary,
                             ),
                           ),
                         ],
@@ -211,25 +209,19 @@ class _HasilGilingListScreenState extends State<HasilGilingListScreen> {
                       itemCount: data.length,
                       itemBuilder: (_, i) {
                         final padi = data[i];
-
-                        // ✅ Gunakan data real dari SQLite
-                        // Jika totalBeras 0 berarti belum diisi
                         final totalBeras = padi.totalBeras > 0
                             ? padi.totalBeras
                             : padi.jumlahKarung * 35;
-                        final biayaGiling = padi.totalBeras > 0
-                            ? (padi.totalBeras / 13).floor()
-                            : (totalBeras / 13).floor();
-                        // ✅ Pakai nilai yang diinput user
+                        final biayaGiling = (totalBeras / 13).floor();
                         final diAmbil = padi.diambilPetani;
                         final dijual = padi.dijualPabrik;
 
                         return Container(
                           margin: const EdgeInsets.only(bottom: 14),
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: context.cardColor,
                             borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: const Color(0xFFEEEEEE)),
+                            border: Border.all(color: context.borderColor),
                           ),
                           child: Padding(
                             padding: const EdgeInsets.all(16),
@@ -250,22 +242,22 @@ class _HasilGilingListScreenState extends State<HasilGilingListScreen> {
                                           style: GoogleFonts.poppins(
                                             fontSize: 15,
                                             fontWeight: FontWeight.w700,
-                                            color: AppTheme.textDark,
+                                            color: context.textPrimary,
                                           ),
                                         ),
                                         Row(
                                           children: [
-                                            const Icon(
+                                            Icon(
                                               Icons.calendar_today,
                                               size: 11,
-                                              color: AppTheme.textGrey,
+                                              color: context.textSecondary,
                                             ),
                                             const SizedBox(width: 4),
                                             Text(
                                               padi.tanggal,
                                               style: GoogleFonts.poppins(
                                                 fontSize: 11,
-                                                color: AppTheme.textGrey,
+                                                color: context.textSecondary,
                                               ),
                                             ),
                                           ],
@@ -279,7 +271,7 @@ class _HasilGilingListScreenState extends State<HasilGilingListScreen> {
                                         vertical: 4,
                                       ),
                                       decoration: BoxDecoration(
-                                        color: const Color(0xFFE8F5E9),
+                                        color: context.badgeBgSelesai,
                                         borderRadius: BorderRadius.circular(20),
                                       ),
                                       child: Text(
@@ -294,13 +286,10 @@ class _HasilGilingListScreenState extends State<HasilGilingListScreen> {
                                   ],
                                 ),
                                 const SizedBox(height: 12),
-                                const Divider(
-                                  height: 1,
-                                  color: Color(0xFFF0F0F0),
-                                ),
+                                Divider(height: 1, color: context.dividerColor),
                                 const SizedBox(height: 10),
 
-                                // ✅ Detail rows pakai data real SQLite
+                                // Detail rows
                                 _detailRow(
                                   'Total Gabah',
                                   '${padi.jumlahKarung} Karung',
@@ -309,7 +298,6 @@ class _HasilGilingListScreenState extends State<HasilGilingListScreen> {
                                 _detailRow('Biaya Giling', '$biayaGiling Kg'),
                                 _detailRow('Di ambil petani', '$diAmbil Kg'),
                                 _detailRow('Di jual ke pabrik', '$dijual Kg'),
-                                // Konversi quintal
                                 _detailRow(
                                   'Masuk stok',
                                   '${(dijual / 100).toStringAsFixed(2)} Q',
@@ -333,7 +321,7 @@ class _HasilGilingListScreenState extends State<HasilGilingListScreen> {
       margin: const EdgeInsets.only(bottom: 6),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: isHighlight ? const Color(0xFFE8F5E9) : const Color(0xFFF7F7F5),
+        color: isHighlight ? context.badgeBgSelesai : context.cardColorElevated,
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
@@ -343,7 +331,9 @@ class _HasilGilingListScreenState extends State<HasilGilingListScreen> {
             label,
             style: GoogleFonts.poppins(
               fontSize: 12,
-              color: isHighlight ? AppTheme.primaryGreen : AppTheme.textGrey,
+              color: isHighlight
+                  ? AppTheme.primaryGreen
+                  : context.textSecondary,
               fontWeight: isHighlight ? FontWeight.w500 : FontWeight.w400,
             ),
           ),
@@ -352,7 +342,7 @@ class _HasilGilingListScreenState extends State<HasilGilingListScreen> {
             style: GoogleFonts.poppins(
               fontSize: 13,
               fontWeight: FontWeight.w600,
-              color: isHighlight ? AppTheme.primaryGreen : AppTheme.textDark,
+              color: isHighlight ? AppTheme.primaryGreen : context.textPrimary,
             ),
           ),
         ],

@@ -19,10 +19,15 @@ class _PadiMasukScreenState extends State<PadiMasukScreen> {
   @override
   void initState() {
     super.initState();
-    // ✅ Load data dari SQLite saat screen dibuka
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<PadiProvider>().loadPadi();
     });
+  }
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
   }
 
   Color _statusColor(String status) {
@@ -36,14 +41,14 @@ class _PadiMasukScreenState extends State<PadiMasukScreen> {
     }
   }
 
-  Color _statusBgColor(String status) {
+  Color _statusBgColor(String status, bool isDark) {
     switch (status) {
       case 'Dalam Proses':
-        return const Color(0xFFE3F2FD);
+        return isDark ? const Color(0xFF0D2137) : const Color(0xFFE3F2FD);
       case 'Selesai':
-        return const Color(0xFFE8F5E9);
+        return isDark ? const Color(0xFF0D2E12) : const Color(0xFFE8F5E9);
       default:
-        return const Color(0xFFFFF3E0);
+        return isDark ? const Color(0xFF3E2800) : const Color(0xFFFFF3E0);
     }
   }
 
@@ -58,7 +63,7 @@ class _PadiMasukScreenState extends State<PadiMasukScreen> {
         .toList();
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F7F5),
+      backgroundColor: context.bgColor,
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -74,42 +79,46 @@ class _PadiMasukScreenState extends State<PadiMasukScreen> {
                     style: GoogleFonts.poppins(
                       fontSize: 20,
                       fontWeight: FontWeight.w700,
-                      color: AppTheme.textDark,
+                      color: context.textPrimary,
                     ),
                   ),
                   Text(
                     'Data padi petani yang masuk ke pabrik',
                     style: GoogleFonts.poppins(
                       fontSize: 12,
-                      color: AppTheme.textGrey,
+                      color: context.textSecondary,
                     ),
                   ),
                   const SizedBox(height: 16),
-                  // Search
+
+                  // Search bar
                   Container(
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: context.searchBgColor,
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: const Color(0xFFEEEEEE)),
+                      border: Border.all(color: context.borderColor),
                     ),
                     child: TextField(
                       controller: _searchCtrl,
                       onChanged: (v) => setState(() => _searchQuery = v),
-                      style: GoogleFonts.poppins(fontSize: 13),
+                      style: GoogleFonts.poppins(
+                        fontSize: 13,
+                        color: context.textPrimary,
+                      ),
                       decoration: InputDecoration(
                         hintText: 'Cari nama petani atau ID...',
                         hintStyle: GoogleFonts.poppins(
                           fontSize: 13,
-                          color: AppTheme.textLight,
+                          color: context.textHint,
                         ),
-                        prefixIcon: const Icon(
+                        prefixIcon: Icon(
                           Icons.search,
-                          color: AppTheme.textGrey,
+                          color: context.textSecondary,
                           size: 20,
                         ),
-                        suffixIcon: const Icon(
+                        suffixIcon: Icon(
                           Icons.tune,
-                          color: AppTheme.textGrey,
+                          color: context.textSecondary,
                           size: 20,
                         ),
                         border: InputBorder.none,
@@ -137,16 +146,16 @@ class _PadiMasukScreenState extends State<PadiMasukScreen> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Icon(
+                          Icon(
                             Icons.inbox_outlined,
                             size: 60,
-                            color: AppTheme.textLight,
+                            color: context.textHint,
                           ),
                           const SizedBox(height: 12),
                           Text(
                             'Belum ada data padi',
                             style: GoogleFonts.poppins(
-                              color: AppTheme.textGrey,
+                              color: context.textSecondary,
                             ),
                           ),
                         ],
@@ -160,9 +169,9 @@ class _PadiMasukScreenState extends State<PadiMasukScreen> {
                         return Container(
                           margin: const EdgeInsets.only(bottom: 12),
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: context.cardColor,
                             borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: const Color(0xFFEEEEEE)),
+                            border: Border.all(color: context.borderColor),
                           ),
                           child: Padding(
                             padding: const EdgeInsets.all(16),
@@ -175,7 +184,7 @@ class _PadiMasukScreenState extends State<PadiMasukScreen> {
                                       width: 40,
                                       height: 40,
                                       decoration: BoxDecoration(
-                                        color: const Color(0xFFE8F5E9),
+                                        color: context.iconBgColor,
                                         borderRadius: BorderRadius.circular(10),
                                       ),
                                       child: const Icon(
@@ -195,22 +204,22 @@ class _PadiMasukScreenState extends State<PadiMasukScreen> {
                                             style: GoogleFonts.poppins(
                                               fontSize: 14,
                                               fontWeight: FontWeight.w600,
-                                              color: AppTheme.textDark,
+                                              color: context.textPrimary,
                                             ),
                                           ),
                                           Row(
                                             children: [
-                                              const Icon(
+                                              Icon(
                                                 Icons.calendar_today,
                                                 size: 11,
-                                                color: AppTheme.textGrey,
+                                                color: context.textSecondary,
                                               ),
                                               const SizedBox(width: 4),
                                               Text(
                                                 padi.tanggal,
                                                 style: GoogleFonts.poppins(
                                                   fontSize: 11,
-                                                  color: AppTheme.textGrey,
+                                                  color: context.textSecondary,
                                                 ),
                                               ),
                                             ],
@@ -225,7 +234,10 @@ class _PadiMasukScreenState extends State<PadiMasukScreen> {
                                         vertical: 4,
                                       ),
                                       decoration: BoxDecoration(
-                                        color: _statusBgColor(padi.status),
+                                        color: _statusBgColor(
+                                          padi.status,
+                                          context.isDark,
+                                        ),
                                         borderRadius: BorderRadius.circular(20),
                                       ),
                                       child: Text(
@@ -240,10 +252,7 @@ class _PadiMasukScreenState extends State<PadiMasukScreen> {
                                   ],
                                 ),
                                 const SizedBox(height: 12),
-                                const Divider(
-                                  height: 1,
-                                  color: Color(0xFFF0F0F0),
-                                ),
+                                Divider(height: 1, color: context.dividerColor),
                                 const SizedBox(height: 10),
                                 Row(
                                   mainAxisAlignment:
@@ -257,7 +266,7 @@ class _PadiMasukScreenState extends State<PadiMasukScreen> {
                                           'Total Volume',
                                           style: GoogleFonts.poppins(
                                             fontSize: 11,
-                                            color: AppTheme.textGrey,
+                                            color: context.textSecondary,
                                           ),
                                         ),
                                         Text(
@@ -265,7 +274,7 @@ class _PadiMasukScreenState extends State<PadiMasukScreen> {
                                           style: GoogleFonts.poppins(
                                             fontSize: 15,
                                             fontWeight: FontWeight.w700,
-                                            color: AppTheme.textDark,
+                                            color: context.textPrimary,
                                           ),
                                         ),
                                       ],
@@ -279,7 +288,6 @@ class _PadiMasukScreenState extends State<PadiMasukScreen> {
                                                 HasilGilingScreen(padi: padi),
                                           ),
                                         );
-                                        // ✅ Refresh setelah kembali
                                         if (mounted) {
                                           context
                                               .read<PadiProvider>()
@@ -317,17 +325,13 @@ class _PadiMasukScreenState extends State<PadiMasukScreen> {
         ),
       ),
 
-      // FAB
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
           await Navigator.push(
             context,
             MaterialPageRoute(builder: (_) => const TambahPadiScreen()),
           );
-          // ✅ Refresh setelah tambah
-          if (mounted) {
-            context.read<PadiProvider>().loadPadi();
-          }
+          if (mounted) context.read<PadiProvider>().loadPadi();
         },
         backgroundColor: AppTheme.primaryGreen,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),

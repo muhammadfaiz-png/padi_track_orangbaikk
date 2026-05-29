@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 import '../theme/app_theme.dart';
 import '../services/auth_service.dart';
+import '../providers/theme_provider.dart';
 
 class ProfilScreen extends StatefulWidget {
   const ProfilScreen({super.key});
@@ -12,10 +14,7 @@ class ProfilScreen extends StatefulWidget {
 class _ProfilScreenState extends State<ProfilScreen> {
   Map<String, String> _userData = {};
   bool _loading = true;
-
-  // Pengaturan toggle
   bool _notifikasi = true;
-  bool _darkMode = false;
   bool _suara = true;
 
   @override
@@ -81,16 +80,34 @@ class _ProfilScreenState extends State<ProfilScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // ✅ Watch ThemeProvider
+    final themeProvider = context.watch<ThemeProvider>();
+    final isDark = themeProvider.isDarkMode;
+
+    // Warna adaptif berdasarkan mode
+    final bgColor = isDark ? const Color(0xFF121212) : const Color(0xFFF7F7F5);
+    final cardColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
+    final borderColor = isDark
+        ? const Color(0xFF2C2C2C)
+        : const Color(0xFFEEEEEE);
+    final iconBgColor = isDark
+        ? const Color(0xFF1B5E20)
+        : const Color(0xFFE8F5E9);
+    final textColor = isDark ? Colors.white : AppTheme.textDark;
+    final subTextColor = isDark ? Colors.grey.shade400 : AppTheme.textGrey;
+    final labelColor = isDark ? Colors.grey.shade500 : AppTheme.textGrey;
+
     if (_loading) {
-      return const Scaffold(
-        body: Center(
+      return Scaffold(
+        backgroundColor: bgColor,
+        body: const Center(
           child: CircularProgressIndicator(color: AppTheme.primaryGreen),
         ),
       );
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F7F5),
+      backgroundColor: bgColor,
       body: SafeArea(
         child: SingleChildScrollView(
           child: Column(
@@ -125,8 +142,6 @@ class _ProfilScreenState extends State<ProfilScreen> {
                       ],
                     ),
                     const SizedBox(height: 24),
-
-                    // Avatar
                     Container(
                       width: 80,
                       height: 80,
@@ -145,7 +160,6 @@ class _ProfilScreenState extends State<ProfilScreen> {
                       ),
                     ),
                     const SizedBox(height: 12),
-
                     Text(
                       _userData['nama'] ?? '-',
                       style: GoogleFonts.poppins(
@@ -182,21 +196,35 @@ class _ProfilScreenState extends State<ProfilScreen> {
               // === INFO AKUN ===
               _buildSection(
                 title: 'Informasi Akun',
+                cardColor: cardColor,
+                borderColor: borderColor,
+                labelColor: labelColor,
                 children: [
                   _buildInfoTile(
                     icon: Icons.person_outline,
                     label: 'Nama Lengkap',
                     value: _userData['nama'] ?? '-',
+                    iconBgColor: iconBgColor,
+                    textColor: textColor,
+                    subTextColor: subTextColor,
                   ),
+                  _buildDivider(borderColor),
                   _buildInfoTile(
                     icon: Icons.account_circle_outlined,
                     label: 'Username',
                     value: _userData['username'] ?? '-',
+                    iconBgColor: iconBgColor,
+                    textColor: textColor,
+                    subTextColor: subTextColor,
                   ),
+                  _buildDivider(borderColor),
                   _buildInfoTile(
                     icon: Icons.badge_outlined,
                     label: 'Role',
                     value: _userData['role'] ?? '-',
+                    iconBgColor: iconBgColor,
+                    textColor: textColor,
+                    subTextColor: subTextColor,
                   ),
                 ],
               ),
@@ -206,24 +234,38 @@ class _ProfilScreenState extends State<ProfilScreen> {
               // === PENGATURAN ===
               _buildSection(
                 title: 'Pengaturan',
+                cardColor: cardColor,
+                borderColor: borderColor,
+                labelColor: labelColor,
                 children: [
                   _buildToggleTile(
                     icon: Icons.notifications_outlined,
                     label: 'Notifikasi',
                     value: _notifikasi,
+                    iconBgColor: iconBgColor,
+                    textColor: textColor,
                     onChanged: (v) => setState(() => _notifikasi = v),
                   ),
+                  _buildDivider(borderColor),
                   _buildToggleTile(
                     icon: Icons.volume_up_outlined,
                     label: 'Suara',
                     value: _suara,
+                    iconBgColor: iconBgColor,
+                    textColor: textColor,
                     onChanged: (v) => setState(() => _suara = v),
                   ),
+                  _buildDivider(borderColor),
+                  // ✅ Mode Gelap terhubung ke ThemeProvider
                   _buildToggleTile(
-                    icon: Icons.dark_mode_outlined,
+                    icon: isDark ? Icons.dark_mode : Icons.dark_mode_outlined,
                     label: 'Mode Gelap',
-                    value: _darkMode,
-                    onChanged: (v) => setState(() => _darkMode = v),
+                    value: isDark,
+                    iconBgColor: iconBgColor,
+                    textColor: textColor,
+                    onChanged: (v) {
+                      themeProvider.toggleDarkMode(v);
+                    },
                   ),
                 ],
               ),
@@ -233,21 +275,35 @@ class _ProfilScreenState extends State<ProfilScreen> {
               // === TENTANG APP ===
               _buildSection(
                 title: 'Tentang Aplikasi',
+                cardColor: cardColor,
+                borderColor: borderColor,
+                labelColor: labelColor,
                 children: [
                   _buildInfoTile(
                     icon: Icons.info_outline,
                     label: 'Versi Aplikasi',
                     value: '1.0.0',
+                    iconBgColor: iconBgColor,
+                    textColor: textColor,
+                    subTextColor: subTextColor,
                   ),
+                  _buildDivider(borderColor),
                   _buildInfoTile(
                     icon: Icons.business_outlined,
                     label: 'Nama Aplikasi',
                     value: 'PadiTrack',
+                    iconBgColor: iconBgColor,
+                    textColor: textColor,
+                    subTextColor: subTextColor,
                   ),
+                  _buildDivider(borderColor),
                   _buildInfoTile(
                     icon: Icons.description_outlined,
                     label: 'Deskripsi',
                     value: 'Smart Rice Mill Management',
+                    iconBgColor: iconBgColor,
+                    textColor: textColor,
+                    subTextColor: subTextColor,
                   ),
                 ],
               ),
@@ -263,7 +319,9 @@ class _ProfilScreenState extends State<ProfilScreen> {
                   child: ElevatedButton.icon(
                     onPressed: _handleLogout,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red.shade50,
+                      backgroundColor: isDark
+                          ? Colors.red.shade900.withValues(alpha: 0.4)
+                          : Colors.red.shade50,
                       foregroundColor: Colors.red,
                       elevation: 0,
                       shape: RoundedRectangleBorder(
@@ -295,6 +353,9 @@ class _ProfilScreenState extends State<ProfilScreen> {
   Widget _buildSection({
     required String title,
     required List<Widget> children,
+    required Color cardColor,
+    required Color borderColor,
+    required Color labelColor,
   }) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -306,15 +367,15 @@ class _ProfilScreenState extends State<ProfilScreen> {
             style: GoogleFonts.poppins(
               fontSize: 13,
               fontWeight: FontWeight.w600,
-              color: AppTheme.textGrey,
+              color: labelColor,
             ),
           ),
           const SizedBox(height: 8),
           Container(
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: cardColor,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFFEEEEEE)),
+              border: Border.all(color: borderColor),
             ),
             child: Column(children: children),
           ),
@@ -323,10 +384,16 @@ class _ProfilScreenState extends State<ProfilScreen> {
     );
   }
 
+  Widget _buildDivider(Color color) =>
+      Divider(height: 1, color: color, indent: 64);
+
   Widget _buildInfoTile({
     required IconData icon,
     required String label,
     required String value,
+    required Color iconBgColor,
+    required Color textColor,
+    required Color subTextColor,
   }) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -336,7 +403,7 @@ class _ProfilScreenState extends State<ProfilScreen> {
             width: 36,
             height: 36,
             decoration: BoxDecoration(
-              color: const Color(0xFFE8F5E9),
+              color: iconBgColor,
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(icon, color: AppTheme.primaryGreen, size: 18),
@@ -348,17 +415,14 @@ class _ProfilScreenState extends State<ProfilScreen> {
               children: [
                 Text(
                   label,
-                  style: GoogleFonts.poppins(
-                    fontSize: 11,
-                    color: AppTheme.textGrey,
-                  ),
+                  style: GoogleFonts.poppins(fontSize: 11, color: subTextColor),
                 ),
                 Text(
                   value,
                   style: GoogleFonts.poppins(
                     fontSize: 13,
                     fontWeight: FontWeight.w500,
-                    color: AppTheme.textDark,
+                    color: textColor,
                   ),
                 ),
               ],
@@ -373,6 +437,8 @@ class _ProfilScreenState extends State<ProfilScreen> {
     required IconData icon,
     required String label,
     required bool value,
+    required Color iconBgColor,
+    required Color textColor,
     required ValueChanged<bool> onChanged,
   }) {
     return Padding(
@@ -383,7 +449,7 @@ class _ProfilScreenState extends State<ProfilScreen> {
             width: 36,
             height: 36,
             decoration: BoxDecoration(
-              color: const Color(0xFFE8F5E9),
+              color: iconBgColor,
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(icon, color: AppTheme.primaryGreen, size: 18),
@@ -395,7 +461,7 @@ class _ProfilScreenState extends State<ProfilScreen> {
               style: GoogleFonts.poppins(
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
-                color: AppTheme.textDark,
+                color: textColor,
               ),
             ),
           ),

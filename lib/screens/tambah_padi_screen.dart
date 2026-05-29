@@ -21,6 +21,7 @@ class _TambahPadiScreenState extends State<TambahPadiScreen> {
   bool _isLoading = false;
 
   Future<void> _pickTanggal() async {
+    final isDark = context.isDark;
     final picked = await showDatePicker(
       context: context,
       initialDate: DateTime.now(),
@@ -28,7 +29,9 @@ class _TambahPadiScreenState extends State<TambahPadiScreen> {
       lastDate: DateTime(2030),
       builder: (ctx, child) => Theme(
         data: Theme.of(ctx).copyWith(
-          colorScheme: const ColorScheme.light(primary: AppTheme.primaryGreen),
+          colorScheme: isDark
+              ? const ColorScheme.dark(primary: AppTheme.primaryGreenLight)
+              : const ColorScheme.light(primary: AppTheme.primaryGreen),
         ),
         child: child!,
       ),
@@ -116,8 +119,19 @@ class _TambahPadiScreenState extends State<TambahPadiScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Warna field hijau adaptif dark mode
+    final fieldBgColor = context.isDark
+        ? const Color(0xFF1B3A1E)
+        : const Color(0xFFD4EDDA);
+    final fieldTextColor = context.isDark
+        ? Colors.white
+        : AppTheme.primaryGreenDark;
+    final fieldHintColor = context.isDark
+        ? Colors.green.shade300
+        : AppTheme.primaryGreenDark;
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F7F5),
+      backgroundColor: context.bgColor,
       body: SafeArea(
         child: Column(
           children: [
@@ -132,13 +146,13 @@ class _TambahPadiScreenState extends State<TambahPadiScreen> {
                       width: 36,
                       height: 36,
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: context.cardColor,
                         borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: const Color(0xFFEEEEEE)),
+                        border: Border.all(color: context.borderColor),
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.chevron_left,
-                        color: AppTheme.textDark,
+                        color: context.textPrimary,
                         size: 22,
                       ),
                     ),
@@ -152,14 +166,14 @@ class _TambahPadiScreenState extends State<TambahPadiScreen> {
                         style: GoogleFonts.poppins(
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
-                          color: AppTheme.textDark,
+                          color: context.textPrimary,
                         ),
                       ),
                       Text(
                         'Input data petani yg masuk',
                         style: GoogleFonts.poppins(
                           fontSize: 11,
-                          color: AppTheme.textGrey,
+                          color: context.textSecondary,
                         ),
                       ),
                     ],
@@ -180,10 +194,18 @@ class _TambahPadiScreenState extends State<TambahPadiScreen> {
                       // Nama Petani
                       _buildField(
                         icon: Icons.person_outline,
+                        fieldBgColor: fieldBgColor,
+                        fieldTextColor: fieldTextColor,
                         child: TextFormField(
                           controller: _namaCtrl,
-                          style: GoogleFonts.poppins(fontSize: 14),
-                          decoration: _inputDeco('Masukan nama petani'),
+                          style: GoogleFonts.poppins(
+                            fontSize: 14,
+                            color: fieldTextColor,
+                          ),
+                          decoration: _inputDeco(
+                            'Masukan nama petani',
+                            fieldHintColor,
+                          ),
                           validator: (v) => (v == null || v.trim().isEmpty)
                               ? 'Nama tidak boleh kosong'
                               : null,
@@ -194,6 +216,8 @@ class _TambahPadiScreenState extends State<TambahPadiScreen> {
                       // Tanggal
                       _buildField(
                         icon: Icons.calendar_month_outlined,
+                        fieldBgColor: fieldBgColor,
+                        fieldTextColor: fieldTextColor,
                         child: GestureDetector(
                           onTap: _pickTanggal,
                           child: Container(
@@ -209,8 +233,8 @@ class _TambahPadiScreenState extends State<TambahPadiScreen> {
                               style: GoogleFonts.poppins(
                                 fontSize: 14,
                                 color: _tanggal != null
-                                    ? AppTheme.textDark
-                                    : AppTheme.primaryGreenDark,
+                                    ? fieldTextColor
+                                    : fieldHintColor,
                               ),
                             ),
                           ),
@@ -221,11 +245,19 @@ class _TambahPadiScreenState extends State<TambahPadiScreen> {
                       // Jumlah Karung
                       _buildField(
                         icon: Icons.inventory_2_outlined,
+                        fieldBgColor: fieldBgColor,
+                        fieldTextColor: fieldTextColor,
                         child: TextFormField(
                           controller: _karungCtrl,
                           keyboardType: TextInputType.number,
-                          style: GoogleFonts.poppins(fontSize: 14),
-                          decoration: _inputDeco('Jumlah karung'),
+                          style: GoogleFonts.poppins(
+                            fontSize: 14,
+                            color: fieldTextColor,
+                          ),
+                          decoration: _inputDeco(
+                            'Jumlah karung',
+                            fieldHintColor,
+                          ),
                           validator: (v) {
                             if (v == null || v.trim().isEmpty) {
                               return 'Jumlah karung tidak boleh kosong';
@@ -242,12 +274,20 @@ class _TambahPadiScreenState extends State<TambahPadiScreen> {
                       // Catatan
                       _buildField(
                         icon: Icons.mail_outline,
+                        fieldBgColor: fieldBgColor,
+                        fieldTextColor: fieldTextColor,
                         isMultiline: true,
                         child: TextFormField(
                           controller: _catatanCtrl,
                           maxLines: 3,
-                          style: GoogleFonts.poppins(fontSize: 14),
-                          decoration: _inputDeco('Catatan (opsional)'),
+                          style: GoogleFonts.poppins(
+                            fontSize: 14,
+                            color: fieldTextColor,
+                          ),
+                          decoration: _inputDeco(
+                            'Catatan (opsional)',
+                            fieldHintColor,
+                          ),
                         ),
                       ),
                       const SizedBox(height: 32),
@@ -272,11 +312,13 @@ class _TambahPadiScreenState extends State<TambahPadiScreen> {
   Widget _buildField({
     required IconData icon,
     required Widget child,
+    required Color fieldBgColor,
+    required Color fieldTextColor,
     bool isMultiline = false,
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFFD4EDDA),
+        color: fieldBgColor,
         borderRadius: BorderRadius.circular(14),
       ),
       child: Row(
@@ -286,7 +328,7 @@ class _TambahPadiScreenState extends State<TambahPadiScreen> {
         children: [
           Padding(
             padding: EdgeInsets.only(left: 14, top: isMultiline ? 14 : 0),
-            child: Icon(icon, color: AppTheme.primaryGreenDark, size: 20),
+            child: Icon(icon, color: fieldTextColor, size: 20),
           ),
           Expanded(child: child),
         ],
@@ -294,12 +336,9 @@ class _TambahPadiScreenState extends State<TambahPadiScreen> {
     );
   }
 
-  InputDecoration _inputDeco(String hint) => InputDecoration(
+  InputDecoration _inputDeco(String hint, Color hintColor) => InputDecoration(
     hintText: hint,
-    hintStyle: GoogleFonts.poppins(
-      fontSize: 13.5,
-      color: AppTheme.primaryGreenDark,
-    ),
+    hintStyle: GoogleFonts.poppins(fontSize: 13.5, color: hintColor),
     border: InputBorder.none,
     contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
   );

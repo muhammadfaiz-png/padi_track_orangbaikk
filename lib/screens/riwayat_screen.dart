@@ -11,28 +11,34 @@ class RiwayatScreen extends StatefulWidget {
 }
 
 class _RiwayatScreenState extends State<RiwayatScreen> {
-  String _filterTab = 'Semua';
-  final _searchCtrl = TextEditingController();
+  String _filterTab   = 'Semua';
+  final _searchCtrl   = TextEditingController();
   String _searchQuery = '';
 
   @override
-  Widget build(BuildContext context) {
-    final provider = context.watch<PadiProvider>();
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
+  }
 
-    var transaksi = provider.transaksi.where((t) {
+  @override
+  Widget build(BuildContext context) {
+    final provider  = context.watch<PadiProvider>();
+
+    final transaksi = provider.transaksi.where((t) {
       final matchTab =
           _filterTab == 'Semua' ||
           (_filterTab == 'Giling' && t.tipe == 'Giling') ||
           (_filterTab == 'Stok Masuk' && t.tipe == 'Stok Masuk') ||
           (_filterTab == 'Stok Keluar' && t.tipe == 'Stok Keluar');
-      final matchSearch = t.judul.toLowerCase().contains(
-        _searchQuery.toLowerCase(),
-      );
+      final matchSearch = t.judul
+          .toLowerCase()
+          .contains(_searchQuery.toLowerCase());
       return matchTab && matchSearch;
     }).toList();
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F7F5),
+      backgroundColor: context.bgColor,
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -43,95 +49,82 @@ class _RiwayatScreenState extends State<RiwayatScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'Riwayat Transaksi',
-                    style: GoogleFonts.poppins(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w700,
-                      color: AppTheme.textDark,
-                    ),
-                  ),
-                  Text(
-                    'Riwayat aktivitas penggilingan dan stok',
-                    style: GoogleFonts.poppins(
-                      fontSize: 12,
-                      color: AppTheme.textGrey,
-                    ),
-                  ),
+                  Text('Riwayat Transaksi',
+                      style: GoogleFonts.poppins(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
+                        color: context.textPrimary,
+                      )),
+                  Text('Riwayat aktivitas penggilingan dan stok',
+                      style: GoogleFonts.poppins(
+                          fontSize: 12, color: context.textSecondary)),
                   const SizedBox(height: 14),
 
-                  // Search
+                  // Search bar
                   Container(
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: context.searchBgColor,
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: const Color(0xFFEEEEEE)),
+                      border: Border.all(color: context.borderColor),
                     ),
                     child: TextField(
                       controller: _searchCtrl,
                       onChanged: (v) => setState(() => _searchQuery = v),
-                      style: GoogleFonts.poppins(fontSize: 13),
+                      style: GoogleFonts.poppins(
+                          fontSize: 13, color: context.textPrimary),
                       decoration: InputDecoration(
                         hintText: 'Cari transaksi...',
                         hintStyle: GoogleFonts.poppins(
-                          fontSize: 13,
-                          color: AppTheme.textLight,
-                        ),
-                        prefixIcon: const Icon(
-                          Icons.search,
-                          color: AppTheme.textGrey,
-                          size: 20,
-                        ),
+                            fontSize: 13, color: context.textHint),
+                        prefixIcon: Icon(Icons.search,
+                            color: context.textSecondary, size: 20),
                         border: InputBorder.none,
                         contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 12,
-                        ),
+                            horizontal: 16, vertical: 12),
                       ),
                     ),
                   ),
                   const SizedBox(height: 12),
 
-                  // Filter tabs - scrollable
+                  // Filter tabs scrollable
                   SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
                     child: Row(
-                      children: ['Semua', 'Giling', 'Stok Masuk', 'Stok Keluar']
-                          .map((t) {
-                            final active = _filterTab == t;
-                            return GestureDetector(
-                              onTap: () => setState(() => _filterTab = t),
-                              child: Container(
-                                margin: const EdgeInsets.only(right: 8),
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 8,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: active
-                                      ? AppTheme.primaryGreen
-                                      : Colors.white,
-                                  borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(
-                                    color: active
-                                        ? AppTheme.primaryGreen
-                                        : const Color(0xFFDDDDDD),
-                                  ),
-                                ),
-                                child: Text(
-                                  t,
-                                  style: GoogleFonts.poppins(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w500,
-                                    color: active
-                                        ? Colors.white
-                                        : AppTheme.textGrey,
-                                  ),
-                                ),
+                      children: [
+                        'Semua',
+                        'Giling',
+                        'Stok Masuk',
+                        'Stok Keluar'
+                      ].map((t) {
+                        final active = _filterTab == t;
+                        return GestureDetector(
+                          onTap: () => setState(() => _filterTab = t),
+                          child: Container(
+                            margin: const EdgeInsets.only(right: 8),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: active
+                                  ? AppTheme.primaryGreen
+                                  : context.cardColor,
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: active
+                                    ? AppTheme.primaryGreen
+                                    : context.borderColor,
                               ),
-                            );
-                          })
-                          .toList(),
+                            ),
+                            child: Text(t,
+                                style: GoogleFonts.poppins(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                  color: active
+                                      ? Colors.white
+                                      : context.textSecondary,
+                                )),
+                          ),
+                        );
+                      }).toList(),
                     ),
                   ),
                 ],
@@ -142,25 +135,25 @@ class _RiwayatScreenState extends State<RiwayatScreen> {
             Expanded(
               child: transaksi.isEmpty
                   ? Center(
-                      child: Text(
-                        'Tidak ada riwayat',
-                        style: GoogleFonts.poppins(color: AppTheme.textGrey),
-                      ),
+                      child: Text('Tidak ada riwayat',
+                          style: GoogleFonts.poppins(
+                              color: context.textSecondary)),
                     )
                   : ListView.builder(
                       padding: const EdgeInsets.symmetric(horizontal: 20),
                       itemCount: transaksi.length,
                       itemBuilder: (_, i) {
-                        final t = transaksi[i];
+                        final t     = transaksi[i];
                         final masuk = t.jumlah > 0;
 
                         return Container(
                           margin: const EdgeInsets.only(bottom: 10),
                           padding: const EdgeInsets.all(14),
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: context.cardColor,
                             borderRadius: BorderRadius.circular(14),
-                            border: Border.all(color: const Color(0xFFEEEEEE)),
+                            border:
+                                Border.all(color: context.borderColor),
                           ),
                           child: Row(
                             children: [
@@ -170,8 +163,10 @@ class _RiwayatScreenState extends State<RiwayatScreen> {
                                 height: 42,
                                 decoration: BoxDecoration(
                                   color: masuk
-                                      ? const Color(0xFFE8F5E9)
-                                      : const Color(0xFFFCE4EC),
+                                      ? context.badgeBgSelesai
+                                      : context.isDark
+                                          ? const Color(0xFF3B0A0A)
+                                          : const Color(0xFFFCE4EC),
                                   shape: BoxShape.circle,
                                 ),
                                 child: Icon(
@@ -189,67 +184,57 @@ class _RiwayatScreenState extends State<RiwayatScreen> {
                               // Info
                               Expanded(
                                 child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.start,
                                   children: [
                                     Row(
                                       mainAxisAlignment:
                                           MainAxisAlignment.spaceBetween,
                                       children: [
                                         Expanded(
-                                          child: Text(
-                                            t.judul,
-                                            style: GoogleFonts.poppins(
-                                              fontSize: 13,
-                                              fontWeight: FontWeight.w600,
-                                              color: AppTheme.textDark,
-                                            ),
-                                          ),
+                                          child: Text(t.judul,
+                                              style: GoogleFonts.poppins(
+                                                fontSize: 13,
+                                                fontWeight: FontWeight.w600,
+                                                color: context.textPrimary,
+                                              )),
                                         ),
                                         if (t.status.isNotEmpty)
                                           Container(
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 8,
-                                              vertical: 2,
-                                            ),
+                                            padding:
+                                                const EdgeInsets.symmetric(
+                                                    horizontal: 8,
+                                                    vertical: 2),
                                             decoration: BoxDecoration(
-                                              color: const Color(0xFFE8F5E9),
+                                              color: context.badgeBgSelesai,
                                               borderRadius:
                                                   BorderRadius.circular(20),
                                             ),
-                                            child: Text(
-                                              t.status,
-                                              style: GoogleFonts.poppins(
-                                                fontSize: 10,
-                                                fontWeight: FontWeight.w500,
-                                                color: AppTheme.primaryGreen,
-                                              ),
-                                            ),
+                                            child: Text(t.status,
+                                                style: GoogleFonts.poppins(
+                                                  fontSize: 10,
+                                                  fontWeight: FontWeight.w500,
+                                                  color:
+                                                      AppTheme.primaryGreen,
+                                                )),
                                           ),
                                       ],
                                     ),
-                                    Text(
-                                      t.subjudul,
-                                      style: GoogleFonts.poppins(
-                                        fontSize: 11,
-                                        color: AppTheme.textGrey,
-                                      ),
-                                    ),
+                                    Text(t.subjudul,
+                                        style: GoogleFonts.poppins(
+                                            fontSize: 11,
+                                            color: context.textSecondary)),
                                     const SizedBox(height: 4),
                                     Row(
                                       children: [
-                                        const Icon(
-                                          Icons.calendar_today,
-                                          size: 11,
-                                          color: AppTheme.textGrey,
-                                        ),
+                                        Icon(Icons.calendar_today,
+                                            size: 11,
+                                            color: context.textSecondary),
                                         const SizedBox(width: 4),
-                                        Text(
-                                          t.tanggal,
-                                          style: GoogleFonts.poppins(
-                                            fontSize: 10,
-                                            color: AppTheme.textGrey,
-                                          ),
-                                        ),
+                                        Text(t.tanggal,
+                                            style: GoogleFonts.poppins(
+                                                fontSize: 10,
+                                                color: context.textSecondary)),
                                         const Spacer(),
                                         Text(
                                           '${masuk ? '+' : ''}${t.jumlah.toStringAsFixed(0)} Quintal',

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'providers/padi_provider.dart';
+import 'providers/theme_provider.dart'; // ← BARU
 import 'screens/splash_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/register_screen.dart';
@@ -19,7 +20,10 @@ void main() {
   );
   runApp(
     MultiProvider(
-      providers: [ChangeNotifierProvider(create: (_) => PadiProvider())],
+      providers: [
+        ChangeNotifierProvider(create: (_) => PadiProvider()),
+        ChangeNotifierProvider(create: (_) => ThemeProvider()), // ← BARU
+      ],
       child: const PadiTrackApp(),
     ),
   );
@@ -30,10 +34,16 @@ class PadiTrackApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // ✅ Watch ThemeProvider untuk update tema real-time
+    final themeProvider = context.watch<ThemeProvider>();
+
     return MaterialApp(
       title: 'PadiTrack',
       debugShowCheckedModeBanner: false,
+      // ✅ Gunakan theme sesuai mode
       theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: themeProvider.isDarkMode ? ThemeMode.dark : ThemeMode.light,
       initialRoute: '/splash',
       routes: {
         '/splash': (context) => const SplashScreen(),

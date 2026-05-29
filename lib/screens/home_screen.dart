@@ -22,7 +22,6 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    // ✅ Load semua data dari SQLite saat pertama buka
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<PadiProvider>().loadAll();
     });
@@ -31,7 +30,8 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F7F5),
+      // ✅ background ikut dark mode
+      backgroundColor: context.bgColor,
       body: _buildBody(),
       bottomNavigationBar: _buildBottomNav(),
     );
@@ -84,14 +84,15 @@ class _HomeScreenState extends State<HomeScreen> {
               style: GoogleFonts.poppins(
                 fontSize: 20,
                 fontWeight: FontWeight.w700,
-                color: AppTheme.textDark,
+                // ✅ teks ikut dark mode
+                color: context.textPrimary,
               ),
             ),
             Text(
               'Kelola penggilingan padi dengan mudah',
               style: GoogleFonts.poppins(
                 fontSize: 12,
-                color: AppTheme.textGrey,
+                color: context.textSecondary,
               ),
             ),
           ],
@@ -102,7 +103,8 @@ class _HomeScreenState extends State<HomeScreen> {
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: AppTheme.primaryGreen.withValues(alpha: 0.1),
+              // ✅ icon bg ikut dark mode
+              color: context.highlightColor,
               shape: BoxShape.circle,
             ),
             child: const Icon(
@@ -116,9 +118,8 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ─── STAT GRID 2x2 — terhubung ke provider ────────────
+  // ─── STAT GRID 2x2 ────────────────────────────────────
   Widget _buildStatGrid() {
-    // ✅ Ambil stats dari provider (real-time dari SQLite)
     final stats = context.watch<PadiProvider>().stats;
     final isLoading = context.watch<PadiProvider>().isLoading;
 
@@ -141,34 +142,39 @@ class _HomeScreenState extends State<HomeScreen> {
       children: [
         _StatCard(
           icon: Icons.inventory_2_outlined,
-          iconBg: const Color(0xFFE8F5E9),
+          // ✅ icon bg adaptif dark mode
+          iconBg: context.isDark
+              ? const Color(0xFF1B5E20)
+              : const Color(0xFFE8F5E9),
           iconColor: AppTheme.primaryGreen,
           label: 'Total Stok Beras',
-          // ✅ Data dari SQLite
           value: '${stats.stokBeras.toStringAsFixed(1)} Q',
         ),
         _StatCard(
           icon: Icons.grain,
-          iconBg: const Color(0xFFFFF3E0),
+          iconBg: context.isDark
+              ? const Color(0xFF3E2800)
+              : const Color(0xFFFFF3E0),
           iconColor: const Color(0xFFE67E22),
           label: 'Padi Masuk Hari Ini',
-          // ✅ Data dari SQLite
           value: '${stats.padiMasukHariIni} Karung',
         ),
         _StatCard(
           icon: Icons.people_outline,
-          iconBg: const Color(0xFFE3F2FD),
+          iconBg: context.isDark
+              ? const Color(0xFF0D2137)
+              : const Color(0xFFE3F2FD),
           iconColor: const Color(0xFF2980B9),
           label: 'Total Petani',
-          // ✅ Data dari SQLite
           value: '${stats.totalPetani} Orang',
         ),
         _StatCard(
           icon: Icons.hourglass_bottom_rounded,
-          iconBg: const Color(0xFFFCE4EC),
+          iconBg: context.isDark
+              ? const Color(0xFF3B0A0A)
+              : const Color(0xFFFCE4EC),
           iconColor: const Color(0xFFC0392B),
           label: 'Padi Belum Giling',
-          // ✅ Data dari SQLite
           value: '${stats.padiBelumGiling} Karung',
         ),
       ],
@@ -185,7 +191,7 @@ class _HomeScreenState extends State<HomeScreen> {
           style: GoogleFonts.poppins(
             fontSize: 15,
             fontWeight: FontWeight.w600,
-            color: AppTheme.textDark,
+            color: context.textPrimary,
           ),
         ),
         const SizedBox(height: 12),
@@ -206,10 +212,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   context,
                   MaterialPageRoute(builder: (_) => const TambahPadiScreen()),
                 );
-                // ✅ Refresh stats setelah tambah padi
-                if (mounted) {
-                  context.read<PadiProvider>().loadAll();
-                }
+                if (mounted) context.read<PadiProvider>().loadAll();
               },
             ),
             _QuickAction(
@@ -228,12 +231,10 @@ class _HomeScreenState extends State<HomeScreen> {
               icon: Icons.history,
               label: 'Riwayat',
               isPrimary: false,
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const RiwayatScreen()),
-                );
-              },
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const RiwayatScreen()),
+              ),
             ),
           ],
         ),
@@ -241,9 +242,8 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ─── AKTIVITAS TERKINI — dari provider ────────────────
+  // ─── AKTIVITAS TERKINI ────────────────────────────────
   Widget _buildAktivitasTerkini() {
-    // ✅ Ambil 3 transaksi terbaru dari provider
     final transaksi = context.watch<PadiProvider>().transaksi.take(3).toList();
 
     return Column(
@@ -257,16 +257,14 @@ class _HomeScreenState extends State<HomeScreen> {
               style: GoogleFonts.poppins(
                 fontSize: 15,
                 fontWeight: FontWeight.w600,
-                color: AppTheme.textDark,
+                color: context.textPrimary,
               ),
             ),
             GestureDetector(
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const RiwayatScreen()),
-                );
-              },
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const RiwayatScreen()),
+              ),
               child: Text(
                 'Lihat Semua',
                 style: GoogleFonts.poppins(
@@ -283,33 +281,34 @@ class _HomeScreenState extends State<HomeScreen> {
             ? Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  // ✅ card ikut dark mode
+                  color: context.cardColor,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: const Color(0xFFEEEEEE)),
+                  border: Border.all(color: context.borderColor),
                 ),
                 child: Center(
                   child: Text(
                     'Belum ada aktivitas',
                     style: GoogleFonts.poppins(
                       fontSize: 13,
-                      color: AppTheme.textGrey,
+                      color: context.textSecondary,
                     ),
                   ),
                 ),
               )
             : Container(
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: context.cardColor,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: const Color(0xFFEEEEEE)),
+                  border: Border.all(color: context.borderColor),
                 ),
                 child: ListView.separated(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
                   itemCount: transaksi.length,
-                  separatorBuilder: (_, __) => const Divider(
+                  separatorBuilder: (_, __) => Divider(
                     height: 1,
-                    color: Color(0xFFF0F0F0),
+                    color: context.dividerColor,
                     indent: 60,
                   ),
                   itemBuilder: (_, i) {
@@ -327,7 +326,9 @@ class _HomeScreenState extends State<HomeScreen> {
                             height: 40,
                             decoration: BoxDecoration(
                               color: masuk
-                                  ? const Color(0xFFE8F5E9)
+                                  ? context.badgeBgSelesai
+                                  : context.isDark
+                                  ? const Color(0xFF3B0A0A)
                                   : const Color(0xFFFCE4EC),
                               borderRadius: BorderRadius.circular(10),
                             ),
@@ -351,14 +352,14 @@ class _HomeScreenState extends State<HomeScreen> {
                                   style: GoogleFonts.poppins(
                                     fontSize: 13,
                                     fontWeight: FontWeight.w500,
-                                    color: AppTheme.textDark,
+                                    color: context.textPrimary,
                                   ),
                                 ),
                                 Text(
                                   t.subjudul,
                                   style: GoogleFonts.poppins(
                                     fontSize: 11,
-                                    color: AppTheme.textGrey,
+                                    color: context.textSecondary,
                                   ),
                                 ),
                               ],
@@ -395,9 +396,10 @@ class _HomeScreenState extends State<HomeScreen> {
     ];
 
     return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(top: BorderSide(color: Color(0xFFEEEEEE))),
+      decoration: BoxDecoration(
+        // ✅ bottom nav ikut dark mode
+        color: context.cardColor,
+        border: Border(top: BorderSide(color: context.borderColor)),
       ),
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
@@ -411,7 +413,7 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 Icon(
                   items[i]['icon'] as IconData,
-                  color: selected ? AppTheme.primaryGreen : AppTheme.textLight,
+                  color: selected ? AppTheme.primaryGreen : context.textHint,
                   size: 24,
                 ),
                 const SizedBox(height: 4),
@@ -419,9 +421,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   items[i]['label'] as String,
                   style: GoogleFonts.poppins(
                     fontSize: 10,
-                    color: selected
-                        ? AppTheme.primaryGreen
-                        : AppTheme.textLight,
+                    color: selected ? AppTheme.primaryGreen : context.textHint,
                     fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
                   ),
                 ),
@@ -456,9 +456,10 @@ class _StatCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        // ✅ card ikut dark mode
+        color: context.cardColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFEEEEEE)),
+        border: Border.all(color: context.borderColor),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -476,7 +477,10 @@ class _StatCard extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             label,
-            style: GoogleFonts.poppins(fontSize: 10, color: AppTheme.textGrey),
+            style: GoogleFonts.poppins(
+              fontSize: 10,
+              color: context.textSecondary,
+            ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
@@ -485,7 +489,7 @@ class _StatCard extends StatelessWidget {
             style: GoogleFonts.poppins(
               fontSize: 15,
               fontWeight: FontWeight.w700,
-              color: AppTheme.textDark,
+              color: context.textPrimary,
             ),
           ),
         ],
@@ -513,10 +517,13 @@ class _QuickAction extends StatelessWidget {
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-          color: isPrimary ? AppTheme.primaryGreen : Colors.white,
+          color: isPrimary
+              ? AppTheme.primaryGreen
+              // ✅ card ikut dark mode
+              : context.cardColor,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isPrimary ? AppTheme.primaryGreen : const Color(0xFFDDDDDD),
+            color: isPrimary ? AppTheme.primaryGreen : context.borderColor,
           ),
         ),
         child: Row(
@@ -524,7 +531,7 @@ class _QuickAction extends StatelessWidget {
           children: [
             Icon(
               icon,
-              color: isPrimary ? Colors.white : AppTheme.textDark,
+              color: isPrimary ? Colors.white : context.textPrimary,
               size: 18,
             ),
             const SizedBox(width: 8),
@@ -533,7 +540,7 @@ class _QuickAction extends StatelessWidget {
               style: GoogleFonts.poppins(
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
-                color: isPrimary ? Colors.white : AppTheme.textDark,
+                color: isPrimary ? Colors.white : context.textPrimary,
               ),
             ),
           ],
