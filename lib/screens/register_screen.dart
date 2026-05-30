@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_theme.dart';
+import '../services/auth_service.dart';
 import '../widgets/custom_text_field.dart';
 import '../widgets/primary_button.dart';
 
@@ -13,6 +14,7 @@ class RegisterScreen extends StatefulWidget {
 class _RegisterScreenState extends State<RegisterScreen>
     with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
+  final _namaCtrl = TextEditingController(); // ✅ tambah nama
   final _usernameCtrl = TextEditingController();
   final _passwordCtrl = TextEditingController();
   final _confirmPasswordCtrl = TextEditingController();
@@ -45,33 +47,57 @@ class _RegisterScreenState extends State<RegisterScreen>
   @override
   void dispose() {
     _animCtrl.dispose();
+    _namaCtrl.dispose();
     _usernameCtrl.dispose();
     _passwordCtrl.dispose();
     _confirmPasswordCtrl.dispose();
     super.dispose();
   }
 
+  // ✅ Handle register pakai AuthService → SQLite
   Future<void> _handleRegister() async {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isLoading = true);
-    await Future.delayed(const Duration(seconds: 2));
+
+    final result = await AuthService.register(
+      nama: _namaCtrl.text.trim(),
+      username: _usernameCtrl.text.trim(),
+      password: _passwordCtrl.text.trim(),
+    );
+
     if (mounted) {
       setState(() => _isLoading = false);
-      // Setelah daftar, kembali ke login
-      Navigator.pushReplacementNamed(context, '/login');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Akun berhasil dibuat! Silakan login.',
-            style: GoogleFonts.poppins(fontSize: 13),
+
+      if (result['success'] == true) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              result['message'] ?? 'Akun berhasil dibuat!',
+              style: GoogleFonts.poppins(fontSize: 13),
+            ),
+            backgroundColor: AppTheme.primaryGreen,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
           ),
-          backgroundColor: AppTheme.primaryGreen,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
+        );
+        Navigator.pushReplacementNamed(context, '/login');
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              result['message'] ?? 'Registrasi gagal',
+              style: GoogleFonts.poppins(fontSize: 13),
+            ),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
           ),
-        ),
-      );
+        );
+      }
     }
   }
 
@@ -107,15 +133,13 @@ class _RegisterScreenState extends State<RegisterScreen>
                         width: 100,
                         height: 100,
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.15),
+                          color: Colors.white.withValues(alpha: 0.15),
                           shape: BoxShape.circle,
                           border: Border.all(
-                            color: Colors.white.withOpacity(0.4),
+                            color: Colors.white.withValues(alpha: 0.4),
                             width: 1.5,
                           ),
                         ),
-                        // Ganti dengan Image.asset('assets/images/logo_paditrack.png')
-                        // jika logo sudah ada
                         child: const Icon(
                           Icons.eco,
                           color: Colors.white,
@@ -141,7 +165,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                             child: Column(
                               children: [
                                 Text(
-                                  'Selamat Datang',
+                                  'Buat Akun Baru',
                                   style: GoogleFonts.poppins(
                                     fontSize: 22,
                                     fontWeight: FontWeight.w700,
@@ -150,7 +174,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                                 ),
                                 const SizedBox(height: 6),
                                 Text(
-                                  'Masuk untuk mengelola penggilingan padi',
+                                  'Daftar untuk mengelola penggilingan padi',
                                   style: GoogleFonts.poppins(
                                     fontSize: 12.5,
                                     color: AppTheme.textGrey,
@@ -162,6 +186,22 @@ class _RegisterScreenState extends State<RegisterScreen>
                           ),
                           const SizedBox(height: 36),
 
+                          // ✅ Nama Lengkap
+                          _fieldLabel('Nama Lengkap'),
+                          const SizedBox(height: 8),
+                          CustomTextField(
+                            controller: _namaCtrl,
+                            hintText: 'Masukkan nama lengkap',
+                            prefixIcon: Icons.badge_outlined,
+                            validator: (v) {
+                              if (v == null || v.trim().isEmpty) {
+                                return 'Nama tidak boleh kosong';
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 20),
+
                           // Username
                           _fieldLabel('Username'),
                           const SizedBox(height: 8),
@@ -169,9 +209,15 @@ class _RegisterScreenState extends State<RegisterScreen>
                             controller: _usernameCtrl,
                             hintText: 'Masukkan username',
                             prefixIcon: Icons.person_outline,
-                            validator: (v) => (v == null || v.isEmpty)
-                                ? 'Username tidak boleh kosong'
-                                : null,
+                            validator: (v) {
+                              if (v == null || v.trim().isEmpty) {
+                                return 'Username tidak boleh kosong';
+                              }
+                              if (v.trim().length < 3) {
+                                return 'Username minimal 3 karakter';
+                              }
+                              return null;
+                            },
                           ),
                           const SizedBox(height: 20),
 
@@ -190,21 +236,23 @@ class _RegisterScreenState extends State<RegisterScreen>
                               ),
                             ),
                             validator: (v) {
-                              if (v == null || v.isEmpty)
+                              if (v == null || v.isEmpty) {
                                 return 'Password tidak boleh kosong';
-                              if (v.length < 6)
+                              }
+                              if (v.length < 6) {
                                 return 'Password minimal 6 karakter';
+                              }
                               return null;
                             },
                           ),
                           const SizedBox(height: 20),
 
                           // Confirm Password
-                          _fieldLabel('Confirm Password'),
+                          _fieldLabel('Konfirmasi Password'),
                           const SizedBox(height: 8),
                           CustomTextField(
                             controller: _confirmPasswordCtrl,
-                            hintText: 'Masukkan password',
+                            hintText: 'Ulangi password',
                             prefixIcon: Icons.lock_outline,
                             obscureText: _obscureConfirm,
                             suffixIcon: _eyeIcon(
@@ -214,10 +262,12 @@ class _RegisterScreenState extends State<RegisterScreen>
                               ),
                             ),
                             validator: (v) {
-                              if (v == null || v.isEmpty)
+                              if (v == null || v.isEmpty) {
                                 return 'Konfirmasi password tidak boleh kosong';
-                              if (v != _passwordCtrl.text)
+                              }
+                              if (v != _passwordCtrl.text) {
                                 return 'Password tidak cocok';
+                              }
                               return null;
                             },
                           ),
@@ -234,10 +284,11 @@ class _RegisterScreenState extends State<RegisterScreen>
                           // Link ke Login
                           Center(
                             child: GestureDetector(
-                              onTap: () => Navigator.pushReplacementNamed(
-                                context,
-                                '/login',
-                              ),
+                              onTap:
+                                  () => Navigator.pushReplacementNamed(
+                                    context,
+                                    '/login',
+                                  ),
                               child: RichText(
                                 text: TextSpan(
                                   style: GoogleFonts.poppins(

@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import '../models/padi_model.dart';
@@ -19,7 +20,7 @@ class DatabaseHelper {
     final path = join(dbPath, filePath);
     return await openDatabase(
       path,
-      version: 2, // ✅ versi naik karena ada kolom baru
+      version: 3, // ✅ naik ke versi 3 karena tambah tabel users
       onCreate: _createDB,
       onUpgrade: _upgradeDB,
     );
@@ -59,7 +60,20 @@ class DatabaseHelper {
       )
     ''');
 
+    // ✅ Tabel users baru
+    await db.execute('''
+      CREATE TABLE users (
+        id        TEXT PRIMARY KEY,
+        nama      TEXT NOT NULL,
+        username  TEXT NOT NULL UNIQUE,
+        password  TEXT NOT NULL,
+        role      TEXT NOT NULL DEFAULT 'Operator'
+      )
+    ''');
+
     final batch = db.batch();
+
+    // Data padi awal
     batch.insert('padi', {
       'id': '1',
       'namaPetani': 'Budi Santoso',
@@ -93,7 +107,11 @@ class DatabaseHelper {
       'diambilPetani': 0,
       'dijualPabrik': 0,
     });
+
+    // Stok awal
     batch.insert('stok', {'id': 1, 'jumlah': 0.0});
+
+    // Transaksi awal
     batch.insert('transaksi', {
       'id': 't1',
       'judul': 'Hasil Giling Budi',
@@ -112,10 +130,27 @@ class DatabaseHelper {
       'tipe': 'Stok Keluar',
       'status': '',
     });
+
+    // ✅ User default
+    batch.insert('users', {
+      'id': '1',
+      'nama': 'Administrator',
+      'username': 'admin',
+      'password': 'admin123',
+      'role': 'Administrator',
+    });
+    batch.insert('users', {
+      'id': '2',
+      'nama': 'Operator Pabrik',
+      'username': 'operator',
+      'password': 'op123',
+      'role': 'Operator',
+    });
+
     await batch.commit(noResult: true);
   }
 
-  // ✅ Upgrade database jika versi lama
+  // ✅ Upgrade database
   Future<void> _upgradeDB(Database db, int oldVersion, int newVersion) async {
     if (oldVersion < 2) {
       await db.execute(
@@ -127,6 +162,37 @@ class DatabaseHelper {
       await db.execute(
         'ALTER TABLE padi ADD COLUMN dijualPabrik INTEGER DEFAULT 0',
       );
+    }
+    if (oldVersion < 3) {
+      // ✅ Tambah tabel users jika upgrade dari versi lama
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS users (
+          id        TEXT PRIMARY KEY,
+          nama      TEXT NOT NULL,
+          username  TEXT NOT NULL UNIQUE,
+          password  TEXT NOT NULL,
+          role      TEXT NOT NULL DEFAULT 'Operator'
+        )
+      ''');
+      // Insert user default
+      try {
+        await db.insert('users', {
+          'id': '1',
+          'nama': 'Administrator',
+          'username': 'admin',
+          'password': 'admin123',
+          'role': 'Administrator',
+        });
+        await db.insert('users', {
+          'id': '2',
+          'nama': 'Operator Pabrik',
+          'username': 'operator',
+          'password': 'op123',
+          'role': 'Operator',
+        });
+      } catch (e) {
+        debugPrint('User default sudah ada: $e');
+      }
     }
   }
 
@@ -156,7 +222,6 @@ class DatabaseHelper {
     );
   }
 
-  // ✅ Update hasil giling (simpan nilai yang diinput user)
   Future<void> updateHasilGiling({
     required String id,
     required int totalBeras,
@@ -186,7 +251,6 @@ class DatabaseHelper {
   Future<Map<String, dynamic>> getStats() async {
     final db = await database;
 
-    // ✅ Padi masuk hari ini berdasarkan tanggal hari ini
     final now = DateTime.now();
     const bln = [
       '',
@@ -219,9 +283,10 @@ class DatabaseHelper {
     );
 
     final stokResult = await db.query('stok', where: 'id = ?', whereArgs: [1]);
-    final stok = stokResult.isEmpty
-        ? 0.0
-        : (stokResult.first['jumlah'] as num).toDouble();
+    final stok =
+        stokResult.isEmpty
+            ? 0.0
+            : (stokResult.first['jumlah'] as num).toDouble();
 
     final row = statsResult.first;
     return {
@@ -263,5 +328,54 @@ class DatabaseHelper {
   Future<List<Map<String, dynamic>>> getAllTransaksi() async {
     final db = await database;
     return await db.query('transaksi', orderBy: 'rowid DESC');
+  }
+
+  // ── USERS ─────────────────────────────────────────────
+
+  // Cari user berdasarkan username
+  Future<Map<String, dynamic>?> getUserByUsername(String username) async {
+    final db = await database;
+    final result = await db.query(
+      'users',
+      where: 'username = ?',
+      whereArgs: [username.trim()],
+      limit: 1,
+    );
+    if (result.isEmpty) return null;
+    return result.first;
+  }
+
+  // Tambah user baru
+  Future<bool> insertUser(Map<String, dynamic> user) async {
+    try {
+      final db = await database;
+      await db.insert(
+        'users',
+        user,
+        conflictAlgorithm: ConflictAlgorithm.abort,
+      );
+      return true;
+    } catch (e) {
+      debugPrint('Error insertUser: $e');
+      return false;
+    }
+  }
+
+  // Cek apakah username sudah ada
+  Future<bool> isUsernameExist(String username) async {
+    final db = await database;
+    final result = await db.query(
+      'users',
+      where: 'username = ?',
+      whereArgs: [username.trim()],
+      limit: 1,
+    );
+    return result.isNotEmpty;
+  }
+
+  // Ambil semua user
+  Future<List<Map<String, dynamic>>> getAllUsers() async {
+    final db = await database;
+    return await db.query('users');
   }
 }

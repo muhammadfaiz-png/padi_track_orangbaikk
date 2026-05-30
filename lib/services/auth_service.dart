@@ -1,4 +1,5 @@
 import 'package:shared_preferences/shared_preferences.dart';
+import '../database/database_helper.dart';
 
 class AuthService {
   static const _keyIsLoggedIn = 'is_logged_in';
@@ -6,52 +7,95 @@ class AuthService {
   static const _keyRole = 'role';
   static const _keyNama = 'nama';
 
-  // ── Login ────────────────────────────────────────────
+  // ── Register ──────────────────────────────────────────
+  static Future<Map<String, dynamic>> register({
+    required String nama,
+    required String username,
+    required String password,
+  }) async {
+    try {
+      // Cek apakah username sudah ada
+      final exist = await DatabaseHelper.instance.isUsernameExist(
+        username.trim(),
+      );
+      if (exist) {
+        return {
+          'success': false,
+          'message': 'Username sudah digunakan, coba yang lain',
+        };
+      }
+
+      // Simpan user baru ke SQLite
+      final success = await DatabaseHelper.instance.insertUser({
+        'id': DateTime.now().millisecondsSinceEpoch.toString(),
+        'nama': nama.trim(),
+        'username': username.trim(),
+        'password': password.trim(),
+        'role': 'Operator',
+      });
+
+      if (success) {
+        return {'success': true, 'message': 'Akun berhasil dibuat!'};
+      }
+      return {'success': false, 'message': 'Gagal membuat akun'};
+    } catch (e) {
+      return {'success': false, 'message': 'Terjadi kesalahan: $e'};
+    }
+  }
+
+  // ── Login ──────────────────────────────────────────────
   static Future<Map<String, dynamic>> login({
     required String username,
     required String password,
   }) async {
-    await Future.delayed(const Duration(seconds: 1));
+    try {
+      // Cari user di SQLite
+      final user = await DatabaseHelper.instance.getUserByUsername(
+        username.trim(),
+      );
 
-    Map<String, String>? userData;
+      if (user == null) {
+        return {'success': false, 'message': 'Username tidak ditemukan'};
+      }
 
-    if (username == 'admin' && password == 'admin123') {
-      userData = {
-        'username': 'admin',
-        'nama': 'Administrator',
-        'role': 'Administrator',
-      };
-    } else if (username == 'operator' && password == 'op123') {
-      userData = {
-        'username': 'operator',
-        'nama': 'Operator Pabrik',
-        'role': 'Operator',
-      };
+      // Cek password
+      if (user['password'] != password.trim()) {
+        return {'success': false, 'message': 'Password salah'};
+      }
+
+      // Simpan session
+      await _saveSession(
+        username: user['username'] as String,
+        nama: user['nama'] as String,
+        role: user['role'] as String,
+      );
+
+      return {'success': true, 'message': 'Login berhasil'};
+    } catch (e) {
+      return {'success': false, 'message': 'Terjadi kesalahan: $e'};
     }
-
-    if (userData != null) {
-      await _saveSession(userData);
-      return {'success': true, 'data': userData};
-    }
-    return {'success': false, 'message': 'Username atau password salah'};
   }
 
-  // ── Save session ─────────────────────────────────────
-  static Future<void> _saveSession(Map<String, String> data) async {
+  // ── Save session ───────────────────────────────────────
+  static Future<void> _saveSession({
+    required String username,
+    required String nama,
+    required String role,
+  }) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_keyIsLoggedIn, true);
-    await prefs.setString(_keyUsername, data['username'] ?? '');
-    await prefs.setString(_keyRole, data['role'] ?? '');
-    await prefs.setString(_keyNama, data['nama'] ?? '');
+    await prefs.setString(_keyUsername, username);
+    await prefs.setString(_keyNama, nama);
+    await prefs.setString(_keyRole, role);
   }
 
-  // ── Cek apakah sudah login ───────────────────────────
+  // ── Cek login ──────────────────────────────────────────
   static Future<bool> isLoggedIn() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getBool(_keyIsLoggedIn) ?? false;
   }
 
-  // ── Ambil data user ──────────────────────────────────
+  // ── Ambil data user ────────────────────────────────────
   static Future<Map<String, String>> getUserData() async {
     final prefs = await SharedPreferences.getInstance();
     return {
@@ -61,7 +105,7 @@ class AuthService {
     };
   }
 
-  // ── Logout ───────────────────────────────────────────
+  // ── Logout ─────────────────────────────────────────────
   static Future<void> logout() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.clear();
