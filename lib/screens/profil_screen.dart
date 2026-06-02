@@ -1,12 +1,16 @@
+import 'dart:io'; //  untuk membaca file gambar
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:image_picker/image_picker.dart'; //  untuk fungsi galeri
 import 'package:provider/provider.dart';
 import '../theme/app_theme.dart';
 import '../services/auth_service.dart';
 import '../providers/theme_provider.dart';
+import '../providers/padi_provider.dart';
 
 class ProfilScreen extends StatefulWidget {
   const ProfilScreen({super.key});
+
   @override
   State<ProfilScreen> createState() => _ProfilScreenState();
 }
@@ -17,18 +21,108 @@ class _ProfilScreenState extends State<ProfilScreen> {
   bool _notifikasi = true;
   bool _suara = true;
 
+  // ✅ Variabel tambahan untuk menampung gambar dari galeri
+  File? _imageFile;
+  final ImagePicker _picker = ImagePicker();
+
   @override
   void initState() {
     super.initState();
     _loadUser();
   }
 
+  //  Sinkronisasi Load Data dengan AuthService yang Baru
   Future<void> _loadUser() async {
     final data = await AuthService.getUserData();
     setState(() {
       _userData = data;
+      // Membaca simpanan path foto profil dari session lokal
+      if (data['foto_profil'] != null && data['foto_profil']!.isNotEmpty) {
+        _imageFile = File(data['foto_profil']!);
+      }
       _loading = false;
     });
+  }
+
+  //  Sinkronisasi Simpan Data Permanen saat Ambil Gambar dari Galeri
+  Future<void> _pickImage() async {
+    try {
+      final XFile? pickedFile = await _picker.pickImage(
+        source: ImageSource.gallery,
+      );
+      if (pickedFile != null) {
+        setState(() {
+          _imageFile = File(pickedFile.path);
+        });
+
+        // Simpan alamat file foto ke penyimpanan lokal lewat AuthService
+        await AuthService.updateProfileData(
+          nama: _userData['nama'] ?? '-',
+          role: _userData['role'] ?? '-',
+          fotoPath: pickedFile.path,
+        );
+      }
+    } catch (e) {
+      debugPrint("Gagal mengambil foto: $e");
+    }
+  }
+
+  // === DIALOG EDIT PROFIL ===
+  Future<void> _showEditDialog() async {
+    final nameController = TextEditingController(text: _userData['nama'] ?? '');
+    final roleController = TextEditingController(text: _userData['role'] ?? '');
+
+    await showDialog<void>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Edit Profil'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameController,
+                decoration: const InputDecoration(labelText: 'Nama Lengkap'),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: roleController,
+                decoration: const InputDecoration(labelText: 'Role'),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Batal'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                final newName = nameController.text.trim();
+                final newRole = roleController.text.trim();
+
+                // Simpan ke SharedPreferences
+                await AuthService.updateProfileData(
+                  nama: newName.isEmpty ? (_userData['nama'] ?? '') : newName,
+                  role: newRole.isEmpty ? (_userData['role'] ?? '') : newRole,
+                  fotoPath: _userData['foto_profil'] ?? '',
+                );
+
+                if (!mounted) return;
+                // Refresh lokal
+                await _loadUser();
+                // Refresh juga state Provider agar UI lain ikut ter-update
+                try {
+                  context.read<PadiProvider>().loadAll();
+                } catch (_) {}
+                Navigator.of(context).pop();
+              },
+              child: const Text('Simpan'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   Future<void> _handleLogout() async {
@@ -80,11 +174,9 @@ class _ProfilScreenState extends State<ProfilScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // ✅ Watch ThemeProvider
     final themeProvider = context.watch<ThemeProvider>();
     final isDark = themeProvider.isDarkMode;
 
-    // Warna adaptif berdasarkan mode
     final bgColor = isDark ? const Color(0xFF121212) : const Color(0xFFF7F7F5);
     final cardColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
     final borderColor = isDark
@@ -121,10 +213,6 @@ class _ProfilScreenState extends State<ProfilScreen> {
                     end: Alignment.bottomRight,
                     colors: [Color(0xFF2E7D32), Color(0xFF388E3C)],
                   ),
-                  borderRadius: BorderRadius.only(
-                    bottomLeft: Radius.circular(32),
-                    bottomRight: Radius.circular(32),
-                  ),
                 ),
                 padding: const EdgeInsets.fromLTRB(20, 24, 20, 32),
                 child: Column(
@@ -142,23 +230,55 @@ class _ProfilScreenState extends State<ProfilScreen> {
                       ],
                     ),
                     const SizedBox(height: 24),
-                    Container(
-                      width: 80,
-                      height: 80,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.2),
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.5),
-                          width: 2,
-                        ),
-                      ),
-                      child: const Icon(
-                        Icons.person,
-                        color: Colors.white,
-                        size: 44,
+
+                    // === BAGIAN FOTO PROFIL ===
+                    GestureDetector(
+                      onTap: _pickImage,
+                      child: Stack(
+                        alignment: Alignment.bottomRight,
+                        children: [
+                          Container(
+                            width: 80,
+                            height: 80,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.2),
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.5),
+                                width: 2,
+                              ),
+                              image: _imageFile != null
+                                  ? DecorationImage(
+                                      image: FileImage(_imageFile!),
+                                      fit: BoxFit.cover,
+                                    )
+                                  : null,
+                            ),
+                            child: _imageFile == null
+                                ? const Icon(
+                                    Icons.person,
+                                    color: Colors.white,
+                                    size: 44,
+                                  )
+                                : null,
+                          ),
+                          Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: const BoxDecoration(
+                              color: Colors.white,
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.camera_alt,
+                              color: Color(0xFF2E7D32),
+                              size: 16,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
+
+                    // === AKHIR BAGIAN FOTO PROFIL ===
                     const SizedBox(height: 12),
                     Text(
                       _userData['nama'] ?? '-',
@@ -196,6 +316,11 @@ class _ProfilScreenState extends State<ProfilScreen> {
               // === INFO AKUN ===
               _buildSection(
                 title: 'Informasi Akun',
+                trailing: IconButton(
+                  onPressed: _showEditDialog,
+                  icon: Icon(Icons.edit, color: AppTheme.primaryGreen),
+                  tooltip: 'Edit Informasi Akun',
+                ),
                 cardColor: cardColor,
                 borderColor: borderColor,
                 labelColor: labelColor,
@@ -256,7 +381,6 @@ class _ProfilScreenState extends State<ProfilScreen> {
                     onChanged: (v) => setState(() => _suara = v),
                   ),
                   _buildDivider(borderColor),
-                  // ✅ Mode Gelap terhubung ke ThemeProvider
                   _buildToggleTile(
                     icon: isDark ? Icons.dark_mode : Icons.dark_mode_outlined,
                     label: 'Mode Gelap',
@@ -352,6 +476,7 @@ class _ProfilScreenState extends State<ProfilScreen> {
 
   Widget _buildSection({
     required String title,
+    Widget? trailing,
     required List<Widget> children,
     required Color cardColor,
     required Color borderColor,
@@ -362,13 +487,19 @@ class _ProfilScreenState extends State<ProfilScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            title,
-            style: GoogleFonts.poppins(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: labelColor,
-            ),
+          Row(
+            children: [
+              Text(
+                title,
+                style: GoogleFonts.poppins(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: labelColor,
+                ),
+              ),
+              const Spacer(),
+              if (trailing != null) trailing,
+            ],
           ),
           const SizedBox(height: 8),
           Container(

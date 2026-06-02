@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/padi_model.dart';
 import '../database/database_helper.dart';
+import '../services/auth_service.dart'; // ✅import AuthService
 
 class TransaksiModel {
   final String id;
@@ -45,24 +46,31 @@ class PadiProvider extends ChangeNotifier {
   DashboardStats _stats          = DashboardStats();
   bool isLoading                 = false;
 
+  // ── 🆕 VARIABEL BARU UNTUK USER PROFILE ──────────────────
+  Map<String, String> _userData  = {};
+
   List<PadiModel> get dataPadi       => _dataPadi;
   List<TransaksiModel> get transaksi => _transaksi;
   double get stokGudang              => _stokGudang;
   DashboardStats get stats           => _stats;
+  Map<String, String> get userData   => _userData; //  Getter data user
+  
   List<PadiModel> get hasilGiling    =>
       _dataPadi.where((p) => p.status == 'Selesai').toList();
 
-  // ── Load semua data dari SQLite ───────────────────────
+  // ── Load semua data dari SQLite & SharedPreferences ─────
   Future<void> loadAll() async {
     if (isLoading) return;
     isLoading = true;
     notifyListeners();
 
     try {
+      //  Ambil data dashboard sekaligus data user secara paralel
       final results = await Future.wait([
         _db.getAllPadi(),
         _db.getAllTransaksi(),
         _db.getStats(),
+        AuthService.getUserData(), // Ambil data user dari session lokal
       ]);
 
       _dataPadi = results[0] as List<PadiModel>;
@@ -86,11 +94,36 @@ class PadiProvider extends ChangeNotifier {
         totalPetani:      statsMap['totalPetani'] as int,
         padiBelumGiling:  statsMap['padiBelumGiling'] as int,
       );
+
+      //  Simpan data user ke state Provider
+      _userData = results[3] as Map<String, String>;
+
     } catch (e) {
       debugPrint('Error loadAll: $e');
     } finally {
       isLoading = false;
-      notifyListeners();
+      notifyListeners(); //  Memicu perubahan UI di seluruh halaman yang mendengarkan
+    }
+  }
+
+  // ── 🆕 FUNGSI BARU: UPDATE PROFIL VIA PROVIDER ───────────
+  Future<void> updateProfile({
+    required String nama,
+    required String role,
+    required String fotoPath,
+  }) async {
+    try {
+      // 1. Perintahkan AuthService untuk simpan ke SharedPreferences
+      await AuthService.updateProfileData(
+        nama: nama,
+        role: role,
+        fotoPath: fotoPath,
+      );
+      
+      // 2. Refresh data lokal di Provider agar UI langsung sinkron saat itu juga
+      await loadAll();
+    } catch (e) {
+      debugPrint('Error updateProfile: $e');
     }
   }
 
@@ -103,7 +136,7 @@ class PadiProvider extends ChangeNotifier {
     await loadAll();
   }
 
-  // ✅ BARU: Selesaikan giling dengan nilai input user
+  //  Selesaikan giling dengan nilai input user
   Future<void> selesaikanGiling({
     required String id,
     required int totalBeras,
@@ -111,7 +144,6 @@ class PadiProvider extends ChangeNotifier {
     required int dijualPabrik,
   }) async {
     try {
-      // ✅ Simpan hasil giling yang diinput user ke SQLite
       await _db.updateHasilGiling(
         id:            id,
         totalBeras:    totalBeras,
@@ -119,12 +151,10 @@ class PadiProvider extends ChangeNotifier {
         dijualPabrik:  dijualPabrik,
       );
 
-      // ✅ Stok berdasarkan dijualPabrik saja (bukan total beras)
       final dijualQuintal = dijualPabrik / 100;
       final stokBaru = _stokGudang + dijualQuintal;
       await _db.updateStok(stokBaru);
 
-      // Simpan ke tabel transaksi
       final now = DateTime.now();
       const bln = [
         '', 'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
@@ -138,7 +168,6 @@ class PadiProvider extends ChangeNotifier {
         'judul':    'Hasil Giling ${padi.namaPetani}',
         'subjudul': 'Dijual: $dijualPabrik KG | Diambil: $diambilPetani KG',
         'tanggal':  tanggal,
-        // ✅ Jumlah transaksi = dijual ke pabrik dalam quintal
         'jumlah':   dijualQuintal,
         'tipe':     'Giling',
         'status':   'Selesai',
@@ -150,7 +179,7 @@ class PadiProvider extends ChangeNotifier {
     await loadAll();
   }
 
-  // ── updateStatus (tetap ada untuk kompatibilitas) ─────
+  // ── updateStatus ──────────────────────────────────────
   Future<void> updateStatus(String id, String statusBaru) async {
     await _db.updateStatus(id, statusBaru);
     await loadAll();
