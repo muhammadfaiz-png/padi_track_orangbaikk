@@ -10,8 +10,26 @@ class StokScreen extends StatefulWidget {
   State<StokScreen> createState() => _StokScreenState();
 }
 
-class _StokScreenState extends State<StokScreen> {
+class _StokScreenState extends State<StokScreen>
+    with TickerProviderStateMixin {
   String _filterTab = 'Semua';
+  AnimationController? _successAnimController;
+  bool _showSuccessPopup = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _successAnimController = AnimationController(
+      duration: const Duration(milliseconds: 600),
+      vsync: this,
+    );
+  }
+
+  @override
+  void dispose() {
+    _successAnimController?.dispose();
+    super.dispose();
+  }
 
   void _showStokKeluarDialog() {
     final judulCtrl = TextEditingController();
@@ -145,7 +163,7 @@ class _StokScreenState extends State<StokScreen> {
               width: double.infinity,
               height: 50,
               child: ElevatedButton(
-                onPressed: () {
+                onPressed: () async {
                   final judul = judulCtrl.text.trim();
                   final jumlah = double.tryParse(jumlahCtrl.text.trim()) ?? 0;
                   if (judul.isEmpty || jumlah <= 0) return;
@@ -173,7 +191,18 @@ class _StokScreenState extends State<StokScreen> {
                     jumlah: jumlah,
                     tanggal: tanggal,
                   );
-                  Navigator.pop(ctx);
+
+                  // Tampilkan animasi sukses
+                  setState(() => _showSuccessPopup = true);
+                  _successAnimController?.forward();
+
+                  // Tunggu 2 detik lalu tutup
+                  await Future.delayed(const Duration(seconds: 2));
+                  if (mounted) {
+                    Navigator.pop(ctx);
+                    setState(() => _showSuccessPopup = false);
+                    _successAnimController?.reset();
+                  }
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppTheme.primaryGreen,
@@ -208,12 +237,14 @@ class _StokScreenState extends State<StokScreen> {
 
     return Scaffold(
       backgroundColor: context.bgColor,
-      body: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // === HEADER ===
-            Padding(
+      body: Stack(
+        children: [
+          SafeArea(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // === HEADER ===
+                Padding(
               padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -444,11 +475,25 @@ class _StokScreenState extends State<StokScreen> {
                         );
                       },
                     ),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+          // === POPUP ANIMASI SUKSES ===
+          if (_showSuccessPopup && _successAnimController != null)
+            Center(
+              child: ScaleTransition(
+                scale: Tween<double>(begin: 0, end: 1).animate(
+                  CurvedAnimation(
+                    parent: _successAnimController!,
+                    curve: Curves.elasticOut,
+                  ),
+                ),
+                child: _buildSuccessPopup(),
+              ),
+            ),
+        ],
       ),
-
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _showStokKeluarDialog,
         backgroundColor: AppTheme.primaryGreen,
@@ -462,6 +507,43 @@ class _StokScreenState extends State<StokScreen> {
             color: Colors.white,
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildSuccessPopup() {
+    return Container(
+      width: 160,
+      height: 160,
+      decoration: BoxDecoration(
+        color: AppTheme.primaryGreen,
+        shape: BoxShape.circle,
+        boxShadow: [
+          BoxShadow(
+            color: AppTheme.primaryGreen.withValues(alpha: 0.3),
+            blurRadius: 30,
+            spreadRadius: 10,
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(
+            Icons.check_circle,
+            color: Colors.white,
+            size: 64,
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'Berhasil!',
+            style: GoogleFonts.poppins(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: Colors.white,
+            ),
+          ),
+        ],
       ),
     );
   }

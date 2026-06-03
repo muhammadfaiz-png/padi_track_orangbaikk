@@ -1,8 +1,10 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../theme/app_theme.dart';
 import '../providers/padi_provider.dart';
+import '../services/auth_service.dart';
 import 'padi_masuk_screen.dart';
 import 'tambah_padi_screen.dart';
 import 'hasil_giling_list_screen.dart';
@@ -18,13 +20,24 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
+  File? _profileImageFile;
 
   @override
   void initState() {
     super.initState();
+    _loadProfileImage();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<PadiProvider>().loadAll();
     });
+  }
+
+  Future<void> _loadProfileImage() async {
+    final userData = await AuthService.getUserData();
+    if (userData['foto_profil'] != null && userData['foto_profil']!.isNotEmpty) {
+      setState(() {
+        _profileImageFile = File(userData['foto_profil']!);
+      });
+    }
   }
 
   @override
@@ -40,6 +53,10 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildBody() {
     switch (_selectedIndex) {
       case 0:
+        // Load profile image setiap kali home screen ditampilkan
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _loadProfileImage();
+        });
         return SafeArea(
           child: SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
@@ -65,10 +82,16 @@ class _HomeScreenState extends State<HomeScreen> {
       case 3:
         return const StokScreen();
       case 4:
-        return const ProfilScreen();
+        return _buildProfileScreen();
       default:
         return const SizedBox();
     }
+  }
+
+  Widget _buildProfileScreen() {
+    // Load ulang profil image setiap kali membuka profil screen
+    _loadProfileImage();
+    return const ProfilScreen();
   }
 
   // ─── HEADER ───────────────────────────────────────────
@@ -98,7 +121,14 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         ),
         GestureDetector(
-          onTap: () => setState(() => _selectedIndex = 4),
+          onTap: () async {
+            setState(() => _selectedIndex = 4);
+            // Tunggu untuk kemudian load ulang foto profil
+            await Future.delayed(const Duration(milliseconds: 500));
+            if (mounted) {
+              await _loadProfileImage();
+            }
+          },
           child: Container(
             width: 40,
             height: 40,
@@ -106,12 +136,20 @@ class _HomeScreenState extends State<HomeScreen> {
               // ✅ icon bg ikut dark mode
               color: context.highlightColor,
               shape: BoxShape.circle,
+              image: _profileImageFile != null
+                  ? DecorationImage(
+                      image: FileImage(_profileImageFile!),
+                      fit: BoxFit.cover,
+                    )
+                  : null,
             ),
-            child: const Icon(
-              Icons.person_outline,
-              color: AppTheme.primaryGreen,
-              size: 22,
-            ),
+            child: _profileImageFile == null
+                ? const Icon(
+                    Icons.person_outline,
+                    color: AppTheme.primaryGreen,
+                    size: 22,
+                  )
+                : null,
           ),
         ),
       ],
@@ -138,7 +176,7 @@ class _HomeScreenState extends State<HomeScreen> {
       physics: const NeverScrollableScrollPhysics(),
       crossAxisSpacing: 12,
       mainAxisSpacing: 12,
-      childAspectRatio: 1.6,
+      childAspectRatio: 1.3,
       children: [
         _StatCard(
           icon: Icons.inventory_2_outlined,
@@ -454,7 +492,7 @@ class _StatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
         // ✅ card ikut dark mode
         color: context.cardColor,
@@ -463,7 +501,7 @@ class _StatCard extends StatelessWidget {
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
           Container(
             width: 32,
@@ -491,6 +529,8 @@ class _StatCard extends StatelessWidget {
               fontWeight: FontWeight.w700,
               color: context.textPrimary,
             ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),
