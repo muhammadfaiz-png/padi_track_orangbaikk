@@ -10,8 +10,7 @@ class StokScreen extends StatefulWidget {
   State<StokScreen> createState() => _StokScreenState();
 }
 
-class _StokScreenState extends State<StokScreen>
-    with TickerProviderStateMixin {
+class _StokScreenState extends State<StokScreen> with TickerProviderStateMixin {
   String _filterTab = 'Semua';
   AnimationController? _successAnimController;
   bool _showSuccessPopup = false;
@@ -245,236 +244,237 @@ class _StokScreenState extends State<StokScreen>
               children: [
                 // === HEADER ===
                 Padding(
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Stok Gudang',
-                    style: GoogleFonts.poppins(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w700,
-                      color: context.textPrimary,
-                    ),
-                  ),
-                  Text(
-                    'Pantau stok beras pabrik',
-                    style: GoogleFonts.poppins(
-                      fontSize: 12,
-                      color: context.textSecondary,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // === STOK CARD (tetap hijau gradient) ===
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [Color(0xFF2E7D32), Color(0xFF388E3C)],
-                      ),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 48,
-                          height: 48,
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.2),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: const Icon(
-                            Icons.warehouse_outlined,
-                            color: Colors.white,
-                            size: 26,
-                          ),
+                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Stok Gudang',
+                        style: GoogleFonts.poppins(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                          color: context.textPrimary,
                         ),
-                        const SizedBox(width: 16),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                      ),
+                      Text(
+                        'Pantau stok beras pabrik',
+                        style: GoogleFonts.poppins(
+                          fontSize: 12,
+                          color: context.textSecondary,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+
+                      // === STOK CARD (tetap hijau gradient) ===
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [Color(0xFF2E7D32), Color(0xFF388E3C)],
+                          ),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Row(
                           children: [
-                            Text(
-                              'Total Stok Beras',
-                              style: GoogleFonts.poppins(
-                                fontSize: 13,
-                                color: Colors.white.withValues(alpha: 0.85),
+                            Container(
+                              width: 48,
+                              height: 48,
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.2),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: const Icon(
+                                Icons.warehouse_outlined,
+                                color: Colors.white,
+                                size: 26,
                               ),
                             ),
-                            Row(
-                              crossAxisAlignment: CrossAxisAlignment.end,
+                            const SizedBox(width: 16),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  provider.stokGudang.toStringAsFixed(1),
+                                  'Total Stok Beras',
                                   style: GoogleFonts.poppins(
-                                    fontSize: 36,
-                                    fontWeight: FontWeight.w700,
-                                    color: Colors.white,
+                                    fontSize: 13,
+                                    color: Colors.white.withValues(alpha: 0.85),
                                   ),
                                 ),
-                                const SizedBox(width: 6),
-                                Padding(
-                                  padding: const EdgeInsets.only(bottom: 6),
-                                  child: Text(
-                                    'Quintal',
-                                    style: GoogleFonts.poppins(
-                                      fontSize: 16,
-                                      color: Colors.white.withValues(
-                                        alpha: 0.85,
+                                Row(
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  children: [
+                                    Text(
+                                      provider.stokGudang.toStringAsFixed(1),
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 36,
+                                        fontWeight: FontWeight.w700,
+                                        color: Colors.white,
                                       ),
                                     ),
-                                  ),
+                                    const SizedBox(width: 6),
+                                    Padding(
+                                      padding: const EdgeInsets.only(bottom: 6),
+                                      child: Text(
+                                        'Quintal',
+                                        style: GoogleFonts.poppins(
+                                          fontSize: 16,
+                                          color: Colors.white.withValues(
+                                            alpha: 0.85,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ],
                             ),
                           ],
                         ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
+                      ),
+                      const SizedBox(height: 16),
 
-                  // Filter tabs
-                  Row(
-                    children: ['Semua', 'Masuk', 'Keluar'].map((t) {
-                      final active = _filterTab == t;
-                      return GestureDetector(
-                        onTap: () => setState(() => _filterTab = t),
-                        child: Container(
-                          margin: const EdgeInsets.only(right: 8),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 18,
-                            vertical: 8,
-                          ),
-                          decoration: BoxDecoration(
-                            color: active
-                                ? AppTheme.primaryGreen
-                                : context.cardColor,
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                              color: active
-                                  ? AppTheme.primaryGreen
-                                  : context.borderColor,
+                      // Filter tabs
+                      Row(
+                        children: ['Semua', 'Masuk', 'Keluar'].map((t) {
+                          final active = _filterTab == t;
+                          return GestureDetector(
+                            onTap: () => setState(() => _filterTab = t),
+                            child: Container(
+                              margin: const EdgeInsets.only(right: 8),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 18,
+                                vertical: 8,
+                              ),
+                              decoration: BoxDecoration(
+                                color: active
+                                    ? AppTheme.primaryGreen
+                                    : context.cardColor,
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: active
+                                      ? AppTheme.primaryGreen
+                                      : context.borderColor,
+                                ),
+                              ),
+                              child: Text(
+                                t,
+                                style: GoogleFonts.poppins(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w500,
+                                  color: active
+                                      ? Colors.white
+                                      : context.textSecondary,
+                                ),
+                              ),
                             ),
-                          ),
-                          child: Text(
-                            t,
-                            style: GoogleFonts.poppins(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w500,
-                              color: active
-                                  ? Colors.white
-                                  : context.textSecondary,
-                            ),
-                          ),
-                        ),
-                      );
-                    }).toList(),
-                  ),
-                  const SizedBox(height: 14),
+                          );
+                        }).toList(),
+                      ),
+                      const SizedBox(height: 14),
 
-                  Text(
-                    'Aktivitas Terbaru',
-                    style: GoogleFonts.poppins(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      color: context.textPrimary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 10),
-
-            // === LIST AKTIVITAS ===
-            Expanded(
-              child: transaksi.isEmpty
-                  ? Center(
-                      child: Text(
-                        'Belum ada aktivitas',
+                      Text(
+                        'Aktivitas Terbaru',
                         style: GoogleFonts.poppins(
-                          color: context.textSecondary,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: context.textPrimary,
                         ),
                       ),
-                    )
-                  : ListView.builder(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      itemCount: transaksi.length,
-                      itemBuilder: (_, i) {
-                        final t = transaksi[i];
-                        final masuk = t.jumlah > 0;
-                        return Container(
-                          margin: const EdgeInsets.only(bottom: 10),
-                          padding: const EdgeInsets.all(14),
-                          decoration: BoxDecoration(
-                            color: context.cardColor,
-                            borderRadius: BorderRadius.circular(14),
-                            border: Border.all(color: context.borderColor),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 10),
+
+                // === LIST AKTIVITAS ===
+                Expanded(
+                  child: transaksi.isEmpty
+                      ? Center(
+                          child: Text(
+                            'Belum ada aktivitas',
+                            style: GoogleFonts.poppins(
+                              color: context.textSecondary,
+                            ),
                           ),
-                          child: Row(
-                            children: [
-                              Container(
-                                width: 40,
-                                height: 40,
-                                decoration: BoxDecoration(
-                                  color: masuk
-                                      ? context.badgeBgSelesai
-                                      : context.isDark
-                                      ? const Color(0xFF3B0A0A)
-                                      : const Color(0xFFFCE4EC),
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: Icon(
-                                  masuk
-                                      ? Icons.arrow_downward_rounded
-                                      : Icons.arrow_upward_rounded,
-                                  color: masuk
-                                      ? AppTheme.primaryGreen
-                                      : const Color(0xFFC0392B),
-                                  size: 20,
-                                ),
+                        )
+                      : ListView.builder(
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          itemCount: transaksi.length,
+                          itemBuilder: (_, i) {
+                            final t = transaksi[i];
+                            final masuk = t.jumlah > 0;
+                            return Container(
+                              margin: const EdgeInsets.only(bottom: 10),
+                              padding: const EdgeInsets.all(14),
+                              decoration: BoxDecoration(
+                                color: context.cardColor,
+                                borderRadius: BorderRadius.circular(14),
+                                border: Border.all(color: context.borderColor),
                               ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      t.judul,
-                                      style: GoogleFonts.poppins(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w600,
-                                        color: context.textPrimary,
-                                      ),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    width: 40,
+                                    height: 40,
+                                    decoration: BoxDecoration(
+                                      color: masuk
+                                          ? context.badgeBgSelesai
+                                          : context.isDark
+                                          ? const Color(0xFF3B0A0A)
+                                          : const Color(0xFFFCE4EC),
+                                      borderRadius: BorderRadius.circular(10),
                                     ),
-                                    Text(
-                                      t.subjudul,
-                                      style: GoogleFonts.poppins(
-                                        fontSize: 11,
-                                        color: context.textSecondary,
-                                      ),
+                                    child: Icon(
+                                      masuk
+                                          ? Icons.arrow_downward_rounded
+                                          : Icons.arrow_upward_rounded,
+                                      color: masuk
+                                          ? AppTheme.primaryGreen
+                                          : const Color(0xFFC0392B),
+                                      size: 20,
                                     ),
-                                  ],
-                                ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          t.judul,
+                                          style: GoogleFonts.poppins(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w600,
+                                            color: context.textPrimary,
+                                          ),
+                                        ),
+                                        Text(
+                                          t.subjudul,
+                                          style: GoogleFonts.poppins(
+                                            fontSize: 11,
+                                            color: context.textSecondary,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  Text(
+                                    '${masuk ? '+' : ''}${t.jumlah.toStringAsFixed(0)} Q',
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w700,
+                                      color: masuk
+                                          ? AppTheme.primaryGreen
+                                          : const Color(0xFFC0392B),
+                                    ),
+                                  ),
+                                ],
                               ),
-                              Text(
-                                '${masuk ? '+' : ''}${t.jumlah.toStringAsFixed(0)} Q',
-                                style: GoogleFonts.poppins(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w700,
-                                  color: masuk
-                                      ? AppTheme.primaryGreen
-                                      : const Color(0xFFC0392B),
-                                ),
-                              ),
-                            ],
-                          ),
-                        );
-                      },
-                    ),
+                            );
+                          },
+                        ),
                 ),
               ],
             ),
@@ -529,11 +529,7 @@ class _StokScreenState extends State<StokScreen>
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(
-            Icons.check_circle,
-            color: Colors.white,
-            size: 64,
-          ),
+          const Icon(Icons.check_circle, color: Colors.white, size: 64),
           const SizedBox(height: 12),
           Text(
             'Berhasil!',

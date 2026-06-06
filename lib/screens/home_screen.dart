@@ -33,17 +33,19 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _loadProfileImage() async {
     final userData = await AuthService.getUserData();
-    if (userData['foto_profil'] != null && userData['foto_profil']!.isNotEmpty) {
-      setState(() {
-        _profileImageFile = File(userData['foto_profil']!);
-      });
+    if (userData['foto_profil'] != null &&
+        userData['foto_profil']!.isNotEmpty) {
+      if (mounted) {
+        setState(() {
+          _profileImageFile = File(userData['foto_profil']!);
+        });
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // ✅ background ikut dark mode
       backgroundColor: context.bgColor,
       body: _buildBody(),
       bottomNavigationBar: _buildBottomNav(),
@@ -53,25 +55,29 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildBody() {
     switch (_selectedIndex) {
       case 0:
-        // Load profile image setiap kali home screen ditampilkan
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) _loadProfileImage();
-        });
         return SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildHeader(),
-                const SizedBox(height: 24),
-                _buildStatGrid(),
-                const SizedBox(height: 24),
-                _buildAksiCepat(),
-                const SizedBox(height: 24),
-                _buildAktivitasTerkini(),
-                const SizedBox(height: 80),
-              ],
+          child: RefreshIndicator(
+            color: AppTheme.primaryGreen,
+            onRefresh: () async {
+              await context.read<PadiProvider>().loadAll();
+              await _loadProfileImage();
+            },
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildHeader(),
+                  const SizedBox(height: 24),
+                  _buildStatGrid(),
+                  const SizedBox(height: 28),
+                  _buildAksiCepat(),
+                  const SizedBox(height: 28),
+                  _buildAktivitasTerkini(),
+                  const SizedBox(height: 40), // Ruang aman bawah yang pas
+                ],
+              ),
             ),
           ),
         );
@@ -82,16 +88,11 @@ class _HomeScreenState extends State<HomeScreen> {
       case 3:
         return const StokScreen();
       case 4:
-        return _buildProfileScreen();
+        // Navigasi profil dengan mendengarkan callback saat kembali untuk cegah loop bug
+        return ProfilScreen(onProfileUpdated: () => _loadProfileImage());
       default:
         return const SizedBox();
     }
-  }
-
-  Widget _buildProfileScreen() {
-    // Load ulang profil image setiap kali membuka profil screen
-    _loadProfileImage();
-    return const ProfilScreen();
   }
 
   // ─── HEADER ───────────────────────────────────────────
@@ -99,57 +100,63 @@ class _HomeScreenState extends State<HomeScreen> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Selamat Datang',
-              style: GoogleFonts.poppins(
-                fontSize: 20,
-                fontWeight: FontWeight.w700,
-                // ✅ teks ikut dark mode
-                color: context.textPrimary,
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Selamat Datang',
+                style: GoogleFonts.poppins(
+                  fontSize: 22, // Skala font dipertegas
+                  fontWeight: FontWeight.w700,
+                  color: context.textPrimary,
+                  height: 1.2,
+                ),
               ),
-            ),
-            Text(
-              'Kelola penggilingan padi dengan mudah',
-              style: GoogleFonts.poppins(
-                fontSize: 12,
-                color: context.textSecondary,
+              const SizedBox(height: 4),
+              Text(
+                'Kelola penggilingan padi dengan mudah',
+                style: GoogleFonts.poppins(
+                  fontSize: 12,
+                  color: context.textSecondary,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
-            ),
-          ],
+            ],
+          ),
         ),
-        GestureDetector(
-          onTap: () async {
-            setState(() => _selectedIndex = 4);
-            // Tunggu untuk kemudian load ulang foto profil
-            await Future.delayed(const Duration(milliseconds: 500));
-            if (mounted) {
-              await _loadProfileImage();
-            }
-          },
-          child: Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              // ✅ icon bg ikut dark mode
-              color: context.highlightColor,
-              shape: BoxShape.circle,
-              image: _profileImageFile != null
-                  ? DecorationImage(
-                      image: FileImage(_profileImageFile!),
-                      fit: BoxFit.cover,
+        const SizedBox(width: 12),
+        Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(24),
+            onTap: () => setState(() => _selectedIndex = 4),
+            child: Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: context.highlightColor,
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: AppTheme.primaryGreen.withOpacity(0.2),
+                  width: 1.5,
+                ),
+                image: _profileImageFile != null
+                    ? DecorationImage(
+                        image: FileImage(_profileImageFile!),
+                        fit: BoxFit.cover,
+                      )
+                    : null,
+              ),
+              child: _profileImageFile == null
+                  ? const Icon(
+                      Icons.person_outline,
+                      color: AppTheme.primaryGreen,
+                      size: 24,
                     )
                   : null,
             ),
-            child: _profileImageFile == null
-                ? const Icon(
-                    Icons.person_outline,
-                    color: AppTheme.primaryGreen,
-                    size: 22,
-                  )
-                : null,
           ),
         ),
       ],
@@ -163,7 +170,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     if (isLoading) {
       return const SizedBox(
-        height: 160,
+        height: 180,
         child: Center(
           child: CircularProgressIndicator(color: AppTheme.primaryGreen),
         ),
@@ -174,15 +181,15 @@ class _HomeScreenState extends State<HomeScreen> {
       crossAxisCount: 2,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      crossAxisSpacing: 12,
-      mainAxisSpacing: 12,
-      childAspectRatio: 1.3,
+      crossAxisSpacing: 14,
+      mainAxisSpacing: 14,
+      childAspectRatio:
+          1.35, // Rasio disesuaikan agar tidak gampang luapan teks
       children: [
         _StatCard(
           icon: Icons.inventory_2_outlined,
-          // ✅ icon bg adaptif dark mode
           iconBg: context.isDark
-              ? const Color(0xFF1B5E20)
+              ? const Color(0xFF143E17)
               : const Color(0xFFE8F5E9),
           iconColor: AppTheme.primaryGreen,
           label: 'Total Stok Beras',
@@ -191,7 +198,7 @@ class _HomeScreenState extends State<HomeScreen> {
         _StatCard(
           icon: Icons.grain,
           iconBg: context.isDark
-              ? const Color(0xFF3E2800)
+              ? const Color(0xFF4A320A)
               : const Color(0xFFFFF3E0),
           iconColor: const Color(0xFFE67E22),
           label: 'Padi Masuk Hari Ini',
@@ -200,7 +207,7 @@ class _HomeScreenState extends State<HomeScreen> {
         _StatCard(
           icon: Icons.people_outline,
           iconBg: context.isDark
-              ? const Color(0xFF0D2137)
+              ? const Color(0xFF0F2B48)
               : const Color(0xFFE3F2FD),
           iconColor: const Color(0xFF2980B9),
           label: 'Total Petani',
@@ -209,7 +216,7 @@ class _HomeScreenState extends State<HomeScreen> {
         _StatCard(
           icon: Icons.hourglass_bottom_rounded,
           iconBg: context.isDark
-              ? const Color(0xFF3B0A0A)
+              ? const Color(0xFF4A1212)
               : const Color(0xFFFCE4EC),
           iconColor: const Color(0xFFC0392B),
           label: 'Padi Belum Giling',
@@ -227,19 +234,19 @@ class _HomeScreenState extends State<HomeScreen> {
         Text(
           'Aksi Cepat',
           style: GoogleFonts.poppins(
-            fontSize: 15,
+            fontSize: 16,
             fontWeight: FontWeight.w600,
             color: context.textPrimary,
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 14),
         GridView.count(
           crossAxisCount: 2,
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          crossAxisSpacing: 10,
-          mainAxisSpacing: 10,
-          childAspectRatio: 2.8,
+          crossAxisSpacing: 12,
+          mainAxisSpacing: 12,
+          childAspectRatio: 2.6,
           children: [
             _QuickAction(
               icon: Icons.add_circle_outline,
@@ -293,52 +300,78 @@ class _HomeScreenState extends State<HomeScreen> {
             Text(
               'Aktivitas Terkini',
               style: GoogleFonts.poppins(
-                fontSize: 15,
+                fontSize: 16,
                 fontWeight: FontWeight.w600,
                 color: context.textPrimary,
               ),
             ),
-            GestureDetector(
+            InkWell(
+              borderRadius: BorderRadius.circular(8),
               onTap: () => Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => const RiwayatScreen()),
               ),
-              child: Text(
-                'Lihat Semua',
-                style: GoogleFonts.poppins(
-                  fontSize: 12,
-                  color: AppTheme.primaryGreen,
-                  fontWeight: FontWeight.w500,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                child: Text(
+                  'Lihat Semua',
+                  style: GoogleFonts.poppins(
+                    fontSize: 13,
+                    color: AppTheme.primaryGreen,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
             ),
           ],
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 14),
         transaksi.isEmpty
             ? Container(
-                padding: const EdgeInsets.all(20),
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 32),
                 decoration: BoxDecoration(
-                  // ✅ card ikut dark mode
                   color: context.cardColor,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: context.borderColor),
-                ),
-                child: Center(
-                  child: Text(
-                    'Belum ada aktivitas',
-                    style: GoogleFonts.poppins(
-                      fontSize: 13,
-                      color: context.textSecondary,
-                    ),
+                  border: Border.all(
+                    color: context.borderColor.withOpacity(0.5),
                   ),
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.assignment_late_outlined,
+                      size: 36,
+                      color: context.textSecondary.withOpacity(0.4),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Belum ada aktivitas',
+                      style: GoogleFonts.poppins(
+                        fontSize: 13,
+                        color: context.textSecondary.withOpacity(0.8),
+                      ),
+                    ),
+                  ],
                 ),
               )
             : Container(
                 decoration: BoxDecoration(
                   color: context.cardColor,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: context.borderColor),
+                  border: Border.all(
+                    color: context.borderColor.withOpacity(0.5),
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(
+                        context.isDark ? 0.2 : 0.03,
+                      ),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
                 ),
                 child: ListView.separated(
                   shrinkWrap: true,
@@ -346,8 +379,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   itemCount: transaksi.length,
                   separatorBuilder: (_, __) => Divider(
                     height: 1,
-                    color: context.dividerColor,
-                    indent: 60,
+                    color: context.dividerColor.withOpacity(0.4),
+                    indent: 68,
                   ),
                   itemBuilder: (_, i) {
                     final t = transaksi[i];
@@ -355,24 +388,24 @@ class _HomeScreenState extends State<HomeScreen> {
                     return Padding(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 16,
-                        vertical: 12,
+                        vertical: 14,
                       ),
                       child: Row(
                         children: [
                           Container(
-                            width: 40,
-                            height: 40,
+                            width: 42,
+                            height: 42,
                             decoration: BoxDecoration(
                               color: masuk
                                   ? context.badgeBgSelesai
-                                  : context.isDark
-                                  ? const Color(0xFF3B0A0A)
-                                  : const Color(0xFFFCE4EC),
-                              borderRadius: BorderRadius.circular(10),
+                                  : (context.isDark
+                                        ? const Color(0xFF4A1212)
+                                        : const Color(0xFFFCE4EC)),
+                              borderRadius: BorderRadius.circular(12),
                             ),
                             child: Icon(
                               masuk
-                                  ? Icons.check_circle_outline
+                                  ? Icons.arrow_downward_rounded
                                   : Icons.arrow_upward_rounded,
                               color: masuk
                                   ? AppTheme.primaryGreen
@@ -380,7 +413,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               size: 20,
                             ),
                           ),
-                          const SizedBox(width: 12),
+                          const SizedBox(width: 14),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -388,26 +421,32 @@ class _HomeScreenState extends State<HomeScreen> {
                                 Text(
                                   t.judul,
                                   style: GoogleFonts.poppins(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w500,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
                                     color: context.textPrimary,
                                   ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
+                                const SizedBox(height: 2),
                                 Text(
                                   t.subjudul,
                                   style: GoogleFonts.poppins(
                                     fontSize: 11,
                                     color: context.textSecondary,
                                   ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                               ],
                             ),
                           ),
+                          const SizedBox(width: 8),
                           Text(
                             '${masuk ? '+' : ''}${t.jumlah.toStringAsFixed(1)} Q',
                             style: GoogleFonts.poppins(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
                               color: masuk
                                   ? AppTheme.primaryGreen
                                   : const Color(0xFFC0392B),
@@ -426,44 +465,89 @@ class _HomeScreenState extends State<HomeScreen> {
   // ─── BOTTOM NAV ───────────────────────────────────────
   Widget _buildBottomNav() {
     final items = [
-      {'icon': Icons.home_outlined, 'label': 'Home'},
-      {'icon': Icons.grain, 'label': 'Padi Masuk'},
-      {'icon': Icons.settings_outlined, 'label': 'Giling'},
-      {'icon': Icons.inventory_2_outlined, 'label': 'Stok'},
-      {'icon': Icons.person_outline, 'label': 'Profil'},
+      {
+        'icon': Icons.home_rounded,
+        'activeIcon': Icons.home_rounded,
+        'label': 'Home',
+      },
+      {
+        'icon': Icons.grain_outlined,
+        'activeIcon': Icons.grain,
+        'label': 'Padi Masuk',
+      },
+      {
+        'icon': Icons.settings_outlined,
+        'activeIcon': Icons.settings,
+        'label': 'Giling',
+      },
+      {
+        'icon': Icons.inventory_2_outlined,
+        'activeIcon': Icons.inventory_2,
+        'label': 'Stok',
+      },
+      {
+        'icon': Icons.person_outline,
+        'activeIcon': Icons.person,
+        'label': 'Profil',
+      },
     ];
 
     return Container(
       decoration: BoxDecoration(
-        // ✅ bottom nav ikut dark mode
         color: context.cardColor,
-        border: Border(top: BorderSide(color: context.borderColor)),
+        border: Border(
+          top: BorderSide(
+            color: context.borderColor.withOpacity(0.4),
+            width: 0.5,
+          ),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(context.isDark ? 0.15 : 0.02),
+            blurRadius: 8,
+            offset: const Offset(0, -2),
+          ),
+        ],
       ),
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: EdgeInsets.only(top: 10, bottom: Platform.isIOS ? 24 : 10),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: List.generate(items.length, (i) {
           final selected = _selectedIndex == i;
-          return GestureDetector(
-            onTap: () => setState(() => _selectedIndex = i),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  items[i]['icon'] as IconData,
-                  color: selected ? AppTheme.primaryGreen : context.textHint,
-                  size: 24,
+          return Expanded(
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () => setState(() => _selectedIndex = i),
+                highlightColor: Colors.transparent,
+                splashColor: AppTheme.primaryGreen.withOpacity(0.1),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      (selected ? items[i]['activeIcon'] : items[i]['icon'])
+                          as IconData,
+                      color: selected
+                          ? AppTheme.primaryGreen
+                          : context.textHint.withOpacity(0.7),
+                      size: 24,
+                    ),
+                    const SizedBox(height: 5),
+                    Text(
+                      items[i]['label'] as String,
+                      style: GoogleFonts.poppins(
+                        fontSize: 10,
+                        color: selected
+                            ? AppTheme.primaryGreen
+                            : context.textHint.withOpacity(0.7),
+                        fontWeight: selected
+                            ? FontWeight.w600
+                            : FontWeight.w400,
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  items[i]['label'] as String,
-                  style: GoogleFonts.poppins(
-                    fontSize: 10,
-                    color: selected ? AppTheme.primaryGreen : context.textHint,
-                    fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-                  ),
-                ),
-              ],
+              ),
             ),
           );
         }),
@@ -492,45 +576,60 @@ class _StatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        // ✅ card ikut dark mode
         color: context.cardColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: context.borderColor),
+        border: Border.all(color: context.borderColor.withOpacity(0.5)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(context.isDark ? 0.1 : 0.01),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Container(
-            width: 32,
-            height: 32,
+            width: 36,
+            height: 36,
             decoration: BoxDecoration(
               color: iconBg,
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(icon, color: iconColor, size: 18),
+            child: Icon(icon, color: iconColor, size: 20),
           ),
-          const SizedBox(height: 8),
-          Text(
-            label,
-            style: GoogleFonts.poppins(
-              fontSize: 10,
-              color: context.textSecondary,
+          const SizedBox(height: 4),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                Text(
+                  label,
+                  style: GoogleFonts.poppins(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                    color: context.textSecondary,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                Text(
+                  value,
+                  style: GoogleFonts.poppins(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: context.textPrimary,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
             ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          Text(
-            value,
-            style: GoogleFonts.poppins(
-              fontSize: 15,
-              fontWeight: FontWeight.w700,
-              color: context.textPrimary,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),
@@ -553,37 +652,49 @@ class _QuickAction extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        decoration: BoxDecoration(
-          color: isPrimary
-              ? AppTheme.primaryGreen
-              // ✅ card ikut dark mode
-              : context.cardColor,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isPrimary ? AppTheme.primaryGreen : context.borderColor,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: Container(
+          decoration: BoxDecoration(
+            color: isPrimary ? AppTheme.primaryGreen : context.cardColor,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: isPrimary
+                  ? AppTheme.primaryGreen
+                  : context.borderColor.withOpacity(0.5),
+            ),
+            boxShadow: isPrimary
+                ? [
+                    BoxShadow(
+                      color: AppTheme.primaryGreen.withOpacity(0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 3),
+                    ),
+                  ]
+                : null,
           ),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              icon,
-              color: isPrimary ? Colors.white : context.textPrimary,
-              size: 18,
-            ),
-            const SizedBox(width: 8),
-            Text(
-              label,
-              style: GoogleFonts.poppins(
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                icon,
                 color: isPrimary ? Colors.white : context.textPrimary,
+                size: 18,
               ),
-            ),
-          ],
+              const SizedBox(width: 8),
+              Text(
+                label,
+                style: GoogleFonts.poppins(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: isPrimary ? Colors.white : context.textPrimary,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

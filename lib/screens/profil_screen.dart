@@ -9,7 +9,11 @@ import '../providers/theme_provider.dart';
 import '../providers/padi_provider.dart';
 
 class ProfilScreen extends StatefulWidget {
-  const ProfilScreen({super.key});
+  // 1. Tambahkan parameter callback di sini agar bisa dipanggil dari luar
+  final VoidCallback? onProfileUpdated;
+
+  // 2. Masukkan parameter ke dalam konstruktor
+  const ProfilScreen({super.key, this.onProfileUpdated});
 
   @override
   State<ProfilScreen> createState() => _ProfilScreenState();
@@ -21,7 +25,7 @@ class _ProfilScreenState extends State<ProfilScreen> {
   bool _notifikasi = true;
   bool _suara = true;
 
-  // ✅ Variabel tambahan untuk menampung gambar dari galeri
+  //  Variabel tambahan untuk menampung gambar dari galeri
   File? _imageFile;
   final ImagePicker _picker = ImagePicker();
 
@@ -61,6 +65,11 @@ class _ProfilScreenState extends State<ProfilScreen> {
           role: _userData['role'] ?? '-',
           fotoPath: pickedFile.path,
         );
+
+        // 3. Pemicu REFRESH FOTO DI HOME: Panggil callback setelah berhasil ganti foto
+        if (widget.onProfileUpdated != null) {
+          widget.onProfileUpdated!();
+        }
       }
     } catch (e) {
       debugPrint("Gagal mengambil foto: $e");
@@ -111,6 +120,12 @@ class _ProfilScreenState extends State<ProfilScreen> {
                 if (!mounted) return;
                 // Refresh lokal
                 await _loadUser();
+
+                // 4. Pemicu REFRESH NAMA DI HOME: Panggil callback setelah edit teks profil sukses
+                if (widget.onProfileUpdated != null) {
+                  widget.onProfileUpdated!();
+                }
+
                 // Refresh juga state Provider agar UI lain ikut ter-update
                 try {
                   context.read<PadiProvider>().loadAll();
@@ -318,7 +333,7 @@ class _ProfilScreenState extends State<ProfilScreen> {
                 title: 'Informasi Akun',
                 trailing: IconButton(
                   onPressed: _showEditDialog,
-                  icon: Icon(Icons.edit, color: AppTheme.primaryGreen),
+                  icon: const Icon(Icons.edit, color: AppTheme.primaryGreen),
                   tooltip: 'Edit Informasi Akun',
                 ),
                 cardColor: cardColor,

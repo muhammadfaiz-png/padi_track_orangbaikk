@@ -119,16 +119,14 @@ class _TambahPadiScreenState extends State<TambahPadiScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Warna field hijau adaptif dark mode
+    // Penyesuaian tema warna baru yang lebih soft & netral
     final fieldBgColor = context.isDark
-        ? const Color(0xFF1B3A1E)
-        : const Color(0xFFD4EDDA);
-    final fieldTextColor = context.isDark
-        ? Colors.white
-        : AppTheme.primaryGreenDark;
-    final fieldHintColor = context.isDark
-        ? Colors.green.shade300
-        : AppTheme.primaryGreenDark;
+        ? const Color(0xFF1E2820) // Netral gelap dengan sedikit tint hijau
+        : const Color(0xFFF4F6F4); // Abu-abu bersih yang nyaman di mata
+
+    final activeColor = context.isDark
+        ? AppTheme.primaryGreenLight
+        : AppTheme.primaryGreen;
 
     return Scaffold(
       backgroundColor: context.bgColor,
@@ -143,36 +141,39 @@ class _TambahPadiScreenState extends State<TambahPadiScreen> {
                   GestureDetector(
                     onTap: () => Navigator.pop(context),
                     child: Container(
-                      width: 36,
-                      height: 36,
+                      width: 40, // Sedikit diperbesar agar lebih mudah ditekan
+                      height: 40,
                       decoration: BoxDecoration(
                         color: context.cardColor,
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: context.borderColor),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: context.borderColor.withOpacity(0.6),
+                        ),
                       ),
                       child: Icon(
                         Icons.chevron_left,
                         color: context.textPrimary,
-                        size: 22,
+                        size: 24,
                       ),
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 16),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         'Tambah Padi Masuk',
                         style: GoogleFonts.poppins(
-                          fontSize: 16,
+                          fontSize: 18, // Ukuran teks proporsional
                           fontWeight: FontWeight.w700,
                           color: context.textPrimary,
                         ),
                       ),
+                      const SizedBox(height: 2),
                       Text(
                         'Input data petani yg masuk',
                         style: GoogleFonts.poppins(
-                          fontSize: 11,
+                          fontSize: 12,
                           color: context.textSecondary,
                         ),
                       ),
@@ -183,124 +184,159 @@ class _TambahPadiScreenState extends State<TambahPadiScreen> {
             ),
             const SizedBox(height: 24),
 
-            // === FORM ===
+            // === FORM (SCROLLABLE AREA) ===
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Form(
                   key: _formKey,
                   child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       // Nama Petani
-                      _buildField(
-                        icon: Icons.person_outline,
-                        fieldBgColor: fieldBgColor,
-                        fieldTextColor: fieldTextColor,
-                        child: TextFormField(
-                          controller: _namaCtrl,
-                          style: GoogleFonts.poppins(
-                            fontSize: 14,
-                            color: fieldTextColor,
-                          ),
-                          decoration: _inputDeco(
-                            'Masukan nama petani',
-                            fieldHintColor,
-                          ),
-                          validator: (v) => (v == null || v.trim().isEmpty)
-                              ? 'Nama tidak boleh kosong'
-                              : null,
+                      _buildFieldLabel('Nama Petani'),
+                      TextFormField(
+                        controller: _namaCtrl,
+                        style: GoogleFonts.poppins(fontSize: 14),
+                        decoration: _inputDeco(
+                          hint: 'Masukkan nama petani',
+                          icon: Icons.person_outline,
+                          bgColor: fieldBgColor,
+                          activeColor: activeColor,
                         ),
+                        validator: (v) => (v == null || v.trim().isEmpty)
+                            ? 'Nama tidak boleh kosong'
+                            : null,
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 18),
 
                       // Tanggal
-                      _buildField(
-                        icon: Icons.calendar_month_outlined,
-                        fieldBgColor: fieldBgColor,
-                        fieldTextColor: fieldTextColor,
-                        child: GestureDetector(
-                          onTap: _pickTanggal,
-                          child: Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 14,
-                            ),
-                            child: Text(
-                              _tanggal != null
-                                  ? _formatTanggal(_tanggal!)
-                                  : 'Tanggal masuk pabrik',
-                              style: GoogleFonts.poppins(
-                                fontSize: 14,
-                                color: _tanggal != null
-                                    ? fieldTextColor
-                                    : fieldHintColor,
+                      _buildFieldLabel('Tanggal Masuk'),
+                      FormField<DateTime>(
+                        validator: (_) =>
+                            _tanggal == null ? 'Tanggal belum dipilih' : null,
+                        builder: (formFieldState) {
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              GestureDetector(
+                                onTap: () async {
+                                  await _pickTanggal();
+                                  formFieldState.didChange(_tanggal);
+                                },
+                                child: Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 14,
+                                    vertical: 15,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: fieldBgColor,
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: formFieldState.hasError
+                                          ? Colors.red.shade400
+                                          : Colors.transparent,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        Icons.calendar_month_outlined,
+                                        color: _tanggal != null
+                                            ? activeColor
+                                            : context.textSecondary,
+                                        size: 20,
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Text(
+                                        _tanggal != null
+                                            ? _formatTanggal(_tanggal!)
+                                            : 'Pilih tanggal masuk pabrik',
+                                        style: GoogleFonts.poppins(
+                                          fontSize: 14,
+                                          color: _tanggal != null
+                                              ? context.textPrimary
+                                              : context.textSecondary
+                                                    .withOpacity(0.7),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
                               ),
-                            ),
-                          ),
-                        ),
+                              if (formFieldState.hasError)
+                                Padding(
+                                  padding: const EdgeInsets.only(
+                                    left: 14,
+                                    top: 6,
+                                  ),
+                                  child: Text(
+                                    formFieldState.errorText!,
+                                    style: GoogleFonts.poppins(
+                                      color: Colors.red.shade400,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          );
+                        },
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 18),
 
                       // Jumlah Karung
-                      _buildField(
-                        icon: Icons.inventory_2_outlined,
-                        fieldBgColor: fieldBgColor,
-                        fieldTextColor: fieldTextColor,
-                        child: TextFormField(
-                          controller: _karungCtrl,
-                          keyboardType: TextInputType.number,
-                          style: GoogleFonts.poppins(
-                            fontSize: 14,
-                            color: fieldTextColor,
-                          ),
-                          decoration: _inputDeco(
-                            'Jumlah karung',
-                            fieldHintColor,
-                          ),
-                          validator: (v) {
-                            if (v == null || v.trim().isEmpty) {
-                              return 'Jumlah karung tidak boleh kosong';
-                            }
-                            if (int.tryParse(v) == null) {
-                              return 'Masukkan angka yang valid';
-                            }
-                            return null;
-                          },
+                      _buildFieldLabel('Jumlah Karung'),
+                      TextFormField(
+                        controller: _karungCtrl,
+                        keyboardType: TextInputType.number,
+                        style: GoogleFonts.poppins(fontSize: 14),
+                        decoration: _inputDeco(
+                          hint: 'Contoh: 50',
+                          icon: Icons.inventory_2_outlined,
+                          bgColor: fieldBgColor,
+                          activeColor: activeColor,
                         ),
+                        validator: (v) {
+                          if (v == null || v.trim().isEmpty) {
+                            return 'Jumlah karung tidak boleh kosong';
+                          }
+                          if (int.tryParse(v) == null) {
+                            return 'Masukkan angka yang valid';
+                          }
+                          return null;
+                        },
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 18),
 
                       // Catatan
-                      _buildField(
-                        icon: Icons.mail_outline,
-                        fieldBgColor: fieldBgColor,
-                        fieldTextColor: fieldTextColor,
-                        isMultiline: true,
-                        child: TextFormField(
-                          controller: _catatanCtrl,
-                          maxLines: 3,
-                          style: GoogleFonts.poppins(
-                            fontSize: 14,
-                            color: fieldTextColor,
-                          ),
-                          decoration: _inputDeco(
-                            'Catatan (opsional)',
-                            fieldHintColor,
-                          ),
+                      _buildFieldLabel('Catatan Tambahan (Opsional)'),
+                      TextFormField(
+                        controller: _catatanCtrl,
+                        maxLines: 3,
+                        style: GoogleFonts.poppins(fontSize: 14),
+                        decoration: _inputDeco(
+                          hint: 'Tambahkan catatan jika ada...',
+                          icon: Icons.chat_bubble_outline,
+                          bgColor: fieldBgColor,
+                          activeColor: activeColor,
+                          isMultiline: true,
                         ),
                       ),
-                      const SizedBox(height: 32),
-
-                      PrimaryButton(
-                        text: 'SIMPAN',
-                        isLoading: _isLoading,
-                        onPressed: _handleSimpan,
-                      ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 40),
                     ],
                   ),
                 ),
+              ),
+            ),
+
+            // === STICKY BUTTON (TETAP DI BAWAH) ===
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              child: PrimaryButton(
+                text: 'SIMPAN DATA PADI',
+                isLoading: _isLoading,
+                onPressed: _handleSimpan,
               ),
             ),
           ],
@@ -309,37 +345,63 @@ class _TambahPadiScreenState extends State<TambahPadiScreen> {
     );
   }
 
-  Widget _buildField({
-    required IconData icon,
-    required Widget child,
-    required Color fieldBgColor,
-    required Color fieldTextColor,
-    bool isMultiline = false,
-  }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: fieldBgColor,
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Row(
-        crossAxisAlignment: isMultiline
-            ? CrossAxisAlignment.start
-            : CrossAxisAlignment.center,
-        children: [
-          Padding(
-            padding: EdgeInsets.only(left: 14, top: isMultiline ? 14 : 0),
-            child: Icon(icon, color: fieldTextColor, size: 20),
-          ),
-          Expanded(child: child),
-        ],
+  // Widget pembantu untuk Label di atas Form Field
+  Widget _buildFieldLabel(String label) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 4, bottom: 6),
+      child: Text(
+        label,
+        style: GoogleFonts.poppins(
+          fontSize: 13,
+          fontWeight: FontWeight.w600,
+          color: context.textPrimary.withOpacity(0.8),
+        ),
       ),
     );
   }
 
-  InputDecoration _inputDeco(String hint, Color hintColor) => InputDecoration(
-    hintText: hint,
-    hintStyle: GoogleFonts.poppins(fontSize: 13.5, color: hintColor),
-    border: InputBorder.none,
-    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-  );
+  // Generator Dekorasi Input Modern bawaan Flutter
+  InputDecoration _inputDeco({
+    required String hint,
+    required IconData icon,
+    required Color bgColor,
+    required Color activeColor,
+    bool isMultiline = false,
+  }) {
+    return InputDecoration(
+      hintText: hint,
+      hintStyle: GoogleFonts.poppins(
+        fontSize: 14,
+        color: context.textSecondary.withOpacity(0.6),
+      ),
+      fillColor: bgColor,
+      filled: true,
+      prefixIcon: Padding(
+        padding: EdgeInsets.only(bottom: isMultiline ? 45 : 0),
+        child: Icon(icon, size: 20),
+      ),
+      prefixIconColor: WidgetStateColor.resolveWith((states) {
+        if (states.contains(WidgetState.focused)) return activeColor;
+        return context.textSecondary;
+      }),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide.none,
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: activeColor, width: 1.5),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: Colors.red.shade400, width: 1),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: Colors.red.shade400, width: 1.5),
+      ),
+      errorStyle: GoogleFonts.poppins(fontSize: 12),
+    );
+  }
 }
